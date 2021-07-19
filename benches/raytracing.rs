@@ -24,7 +24,7 @@ pub fn bench(c: &mut Criterion) {
     scene.add_shape(Sphere::with_material(
         Point3D::new(-5.0, 0.0, 8.0),
         5.0,
-        Material::new(Color::BLUE).surface(Surface::Reflective(1.0))
+        Material::new(Color::BLUE).surface(Surface::Reflective(1.0)),
     ));
 
     scene.add_shape(Sphere::with_material(
@@ -48,7 +48,9 @@ pub fn bench(c: &mut Criterion) {
     scene.add_shape(Plane::with_material(
         Point3D::new(0.0, -10.0, 0.0),
         Vector3::J,
-        Material::new(Checker::new(Color::WHITE).secondary(Color::BLACK)).surface(Surface::Reflective(0.3)).scale(0.1),
+        Material::new(Checker::new(Color::WHITE).secondary(Color::BLACK))
+            .surface(Surface::Reflective(0.3))
+            .scale(0.1),
     ));
 
     scene.add_light(DirectionalLight::default());

@@ -4,12 +4,11 @@ use crate::color::Color;
 
 use super::Checker;
 
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Texture {
     Color(Color),
     Checker(Checker),
-    Image(DynamicImage)
+    Image(DynamicImage),
 }
 
 impl Texture {

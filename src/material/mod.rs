@@ -9,7 +9,7 @@ mod texture;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Surface {
     Diffuse,
-    Reflective(f64)
+    Reflective(f64),
 }
 
 #[derive(Debug, Clone, PartialEq)]

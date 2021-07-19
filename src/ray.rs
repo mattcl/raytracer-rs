@@ -13,7 +13,11 @@ impl Ray {
     }
 
     pub fn with_generation(origin: Point3D, direction: Vector3, generation: usize) -> Self {
-        Self { origin, direction, generation }
+        Self {
+            origin,
+            direction,
+            generation,
+        }
     }
 
     pub fn origin(&self) -> &Point3D {
@@ -32,7 +36,7 @@ impl Ray {
         Self::with_generation(
             intersection + Point3D::from(normal * offset),
             (self.direction - (2.0 * self.direction.dot(normal) * normal)).normalize(),
-            self.generation + 1
+            self.generation + 1,
         )
     }
 

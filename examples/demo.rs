@@ -1,3 +1,4 @@
+use image::io::Reader as ImageReader;
 use image::DynamicImage;
 use raytracer_rs::color::Color;
 use raytracer_rs::light::{DirectionalLight, PointLight};
@@ -5,7 +6,6 @@ use raytracer_rs::material::{Checker, Material, Surface};
 use raytracer_rs::math::{Point3D, Vector3};
 use raytracer_rs::shape::{Plane, Sphere};
 use raytracer_rs::{Camera, Scene, View};
-use image::io::Reader as ImageReader;
 
 fn main() {
     let mut scene = Scene::new();
@@ -24,7 +24,7 @@ fn main() {
     scene.add_shape(Sphere::with_material(
         Point3D::new(-5.0, 0.0, 8.0),
         5.0,
-        Material::new(Color::BLUE).surface(Surface::Reflective(1.0))
+        Material::new(Color::BLUE).surface(Surface::Reflective(1.0)),
     ));
 
     scene.add_shape(Sphere::with_material(
@@ -45,7 +45,10 @@ fn main() {
         Material::new(Color::BLUE),
     ));
 
-    let fine: DynamicImage = ImageReader::open("this-is-fine.jpg").unwrap().decode().unwrap();
+    let fine: DynamicImage = ImageReader::open("this-is-fine.jpg")
+        .unwrap()
+        .decode()
+        .unwrap();
     scene.add_shape(Sphere::with_material(
         Point3D::new(-8.0, -2.0, -1.0),
         2.0,
@@ -55,7 +58,9 @@ fn main() {
     scene.add_shape(Plane::with_material(
         Point3D::new(0.0, -10.0, 0.0),
         Vector3::J,
-        Material::new(Checker::new(Color::WHITE).secondary(Color::BLACK)).surface(Surface::Reflective(0.3)).scale(0.1),
+        Material::new(Checker::new(Color::WHITE).secondary(Color::BLACK))
+            .surface(Surface::Reflective(0.3))
+            .scale(0.1),
     ));
 
     scene.add_light(DirectionalLight::default());

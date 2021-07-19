@@ -3,7 +3,15 @@ use std::f64::consts::PI;
 use image::{imageops, DynamicImage, GenericImage};
 use rayon::prelude::*;
 
-use crate::{camera::Camera, color::Color, light::Light, material::Surface, math::{Point3D, Vector3}, ray::Ray, shape::{Intersect, Intersection, Shape}};
+use crate::{
+    camera::Camera,
+    color::Color,
+    light::Light,
+    material::Surface,
+    math::{Point3D, Vector3},
+    ray::Ray,
+    shape::{Intersect, Intersection, Shape},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct View {
@@ -171,9 +179,7 @@ impl Scene {
 
     fn color_for(&self, ray: &Ray) -> Color {
         match self.get_closest_intersection(ray) {
-            Some(intersection) => self
-                .color_at(ray, &intersection)
-                .unwrap_or(Color::BLACK),
+            Some(intersection) => self.color_at(ray, &intersection).unwrap_or(Color::BLACK),
             None => self.background.clone(),
         }
     }

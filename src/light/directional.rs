@@ -1,9 +1,11 @@
 use std::f64::INFINITY;
 
-use crate::{color::Color, math::{Point3D, Vector3}};
+use crate::{
+    color::Color,
+    math::{Point3D, Vector3},
+};
 
 use super::{Light, Luminous};
-
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct DirectionalLight {

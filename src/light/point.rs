@@ -1,6 +1,9 @@
 use std::f64::consts::PI;
 
-use crate::{color::Color, math::{Point3D, Vector3}};
+use crate::{
+    color::Color,
+    math::{Point3D, Vector3},
+};
 
 use super::{Light, Luminous};
 
