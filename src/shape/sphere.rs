@@ -34,7 +34,7 @@ impl Sphere {
 
 impl Intersect for Sphere {
     fn intersect(&self, ray: &Ray) -> Option<f64> {
-        let part: Vector3 = (ray.origin() - self.center).into();
+        let part = ray.origin() - self.center;
         let b = -(ray.direction().dot(part));
         let del = b * b - part.magnitude().powi(2) + self.radius * self.radius;
 
@@ -58,11 +58,11 @@ impl Intersect for Sphere {
     }
 
     fn normal_at(&self, point: &Point3D) -> Option<Vector3> {
-        Some(Vector3::from(point - self.center).normalize())
+        Some((point - self.center).normalize())
     }
 
     fn texture_coord(&self, point: &Point3D) -> TextureCoord {
-        let v = Vector3::from(point - self.center);
+        let v = point - self.center;
         TextureCoord::new(
             (1.0 + v.z.atan2(v.x) / PI) * 0.5,
             (v.y / self.radius).acos() / PI,

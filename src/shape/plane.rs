@@ -49,7 +49,7 @@ impl Intersect for Plane {
             return None;
         }
 
-        let d = Vector3::from(ray.origin() - self.point).dot(self.normal) / denominator;
+        let d = (ray.origin() - self.point).dot(self.normal) / denominator;
 
         if d < 0.0 {
             return None;
@@ -63,7 +63,7 @@ impl Intersect for Plane {
     }
 
     fn texture_coord(&self, point: &Point3D) -> TextureCoord {
-        let v = Vector3::from(point - self.point);
+        let v = point - self.point;
         TextureCoord::new(v.dot(self.tex_x), v.dot(self.tex_y), self.material.scale)
     }
 }

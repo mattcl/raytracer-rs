@@ -32,8 +32,17 @@ impl Vector3 {
         z: 1.0,
     };
 
-    pub fn new(x: f64, y: f64, z: f64) -> Self {
-        Self { x, y, z }
+    pub fn new<T, M, N>(x: T, y: M, z: N) -> Self
+    where
+        T: Into<f64> + Copy,
+        M: Into<f64> + Copy,
+        N: Into<f64> + Copy,
+    {
+        Self {
+            x: x.into(),
+            y: y.into(),
+            z: z.into(),
+        }
     }
 
     pub fn dot(&self, other: impl AsRef<Self>) -> f64 {
@@ -53,7 +62,11 @@ impl Vector3 {
             z: cz,
         } = other.as_ref();
 
-        Self::new(by * cz - bz * cy, bz * cx - bx * cz, bx * cy - by * cx)
+        Self {
+            x: by * cz - bz * cy,
+            y: bz * cx - bx * cz,
+            z: bx * cy - by * cx,
+        }
     }
 
     pub fn norm(&self) -> f64 {
@@ -73,14 +86,22 @@ impl Vector3 {
         F: Fn(f64, f64) -> f64,
     {
         let other = other.as_ref();
-        Self::new(f(self.x, other.x), f(self.y, other.y), f(self.z, other.z))
+        Self {
+            x: f(self.x, other.x),
+            y: f(self.y, other.y),
+            z: f(self.z, other.z),
+        }
     }
 
     fn map<F>(&self, f: F) -> Self
     where
         F: Fn(f64) -> f64,
     {
-        Self::new(f(self.x), f(self.y), f(self.z))
+        Self {
+            x: f(self.x),
+            y: f(self.y),
+            z: f(self.z),
+        }
     }
 }
 
@@ -301,5 +322,16 @@ mod tests {
         assert_eq!(a.normalize(), b);
 
         assert_eq!(Vector3::K.normalize(), Vector3::K);
+    }
+
+    #[test]
+    fn ergonomics() {
+        // can consruct from anything that satisfies Into<Float> + Copy
+        let a = Vector3::new(2, 3, 4);
+        let b = Vector3::new(2, 3.0, 4_f32);
+        let c = Vector3::new(2.0, 3.0, 4.0);
+
+        assert_eq!(a, c);
+        assert_eq!(b, c);
     }
 }

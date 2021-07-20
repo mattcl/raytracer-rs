@@ -29,12 +29,12 @@ impl Ray {
     }
 
     pub fn point_at(&self, distance: f64) -> Point3D {
-        (distance * self.direction + Vector3::from(self.origin)).into()
+        distance * self.direction + self.origin
     }
 
     pub fn reflect(&self, normal: &Vector3, intersection: &Point3D, offset: f64) -> Self {
         Self::with_generation(
-            intersection + Point3D::from(normal * offset),
+            intersection + normal * offset,
             (self.direction - (2.0 * self.direction.dot(normal) * normal)).normalize(),
             self.generation + 1,
         )

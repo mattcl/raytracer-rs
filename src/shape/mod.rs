@@ -8,6 +8,7 @@ use crate::{
     ray::Ray,
 };
 
+pub mod mesh;
 pub mod plane;
 pub mod sphere;
 pub mod triangle;
@@ -48,6 +49,7 @@ pub struct SurfaceData {
 pub enum Shape {
     Sphere(Sphere),
     Plane(Plane),
+    Triangle(Triangle),
 }
 
 impl Shape {
@@ -55,6 +57,7 @@ impl Shape {
         match self {
             Shape::Sphere(sphere) => sphere.material(),
             Shape::Plane(plane) => plane.material(),
+            Shape::Triangle(triangle) => triangle.material(),
         }
     }
 }
@@ -64,6 +67,7 @@ impl Intersect for Shape {
         match self {
             Shape::Sphere(ref sphere) => sphere.intersect(ray),
             Shape::Plane(ref plane) => plane.intersect(ray),
+            Shape::Triangle(ref triangle) => triangle.intersect(ray),
         }
     }
 
@@ -71,6 +75,7 @@ impl Intersect for Shape {
         match self {
             Shape::Sphere(ref sphere) => sphere.normal_at(point),
             Shape::Plane(ref plane) => plane.normal_at(point),
+            Shape::Triangle(ref triangle) => triangle.normal_at(point),
         }
     }
 
@@ -78,6 +83,7 @@ impl Intersect for Shape {
         match self {
             Shape::Sphere(ref sphere) => sphere.texture_coord(point),
             Shape::Plane(ref plane) => plane.texture_coord(point),
+            Shape::Triangle(ref triangle) => triangle.texture_coord(point),
         }
     }
 }

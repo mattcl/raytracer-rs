@@ -52,7 +52,7 @@ impl Luminous for PointLight {
     }
 
     fn direction_from(&self, point: &Point3D) -> Vector3 {
-        Vector3::from(self.location - point).normalize()
+        (self.location - point).normalize()
     }
 
     fn distance(&self, point: &Point3D) -> f64 {
@@ -64,7 +64,7 @@ impl Luminous for PointLight {
     }
 
     fn intensity_at(&self, point: &Point3D) -> f64 {
-        let r2 = Vector3::from(self.location - point).norm();
+        let r2 = (self.location - point).norm();
 
         // TODO: figure out something better to do here - MCL - 2021-07-18
         if r2 < 1e-6_f64 {

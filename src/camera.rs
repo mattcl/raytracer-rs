@@ -24,7 +24,7 @@ impl Camera {
     }
 
     pub fn look_at(&mut self, point: &Point3D) {
-        self.forward = Vector3::from(point - self.origin).normalize();
+        self.forward = (point - self.origin).normalize();
         self.right = Vector3::J.cross(self.forward);
         self.up = self.forward.cross(self.right);
     }

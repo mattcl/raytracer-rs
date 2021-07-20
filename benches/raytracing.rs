@@ -64,7 +64,7 @@ pub fn bench(c: &mut Criterion) {
     scene.add_light(PointLight::new(Point3D::new(-7.0, 5.0, 1.0)).intensity(1500.0));
     scene.add_light(PointLight::new(Point3D::new(-2.0, 0.0, -7.0)).intensity(700.0));
 
-    for width in [600, 800, 1200].iter() {
+    for width in [600, 800, 1000, 1200, 1500].iter() {
         group.bench_with_input(
             BenchmarkId::new("single-threaded", width),
             width,

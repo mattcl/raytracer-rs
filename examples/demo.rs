@@ -4,7 +4,7 @@ use raytracer_rs::color::Color;
 use raytracer_rs::light::{DirectionalLight, PointLight};
 use raytracer_rs::material::{Checker, Material, Surface};
 use raytracer_rs::math::{Point3D, Vector3};
-use raytracer_rs::shape::{Plane, Sphere};
+use raytracer_rs::shape::{Plane, Sphere, Triangle};
 use raytracer_rs::{Camera, Scene, View};
 
 fn main() {
@@ -12,11 +12,7 @@ fn main() {
     scene.set_view(View::new(1920, 1080));
     scene.add_camera(Camera::default());
 
-    let cam2 = Camera::new(
-        Point3D::new(0.0, 20.0, -20.0),
-        &Point3D::new(0.0, 0.0, 2.5),
-        70.0,
-    );
+    let cam2 = Camera::new(Point3D::new(0, 20, -20), &Point3D::new(0, 0, 2.5), 70.0);
     scene.add_camera(cam2);
 
     scene.set_max_generations(7);
@@ -43,6 +39,13 @@ fn main() {
         Point3D::new(0.0, 35.0, -10.0),
         15.0,
         Material::new(Color::BLUE),
+    ));
+
+    scene.add_shape(Triangle::with_material(
+        Point3D::new(-16, -1, 17),
+        Point3D::new(-14, 1, 19),
+        Point3D::new(-12, -1, 17),
+        Material::new(Color::RED),
     ));
 
     let fine: DynamicImage = ImageReader::open("this-is-fine.jpg")

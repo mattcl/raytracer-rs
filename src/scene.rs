@@ -143,7 +143,7 @@ impl Scene {
 
         for light in &self.lights {
             let dir = light.direction_from(point);
-            let shadow = Ray::new(point + Point3D::from(normal * 1e-10_f64), dir.clone());
+            let shadow = Ray::new(point + normal * 1e-10_f64, dir.clone());
 
             let intensity = match self.get_closest_intersection(&shadow) {
                 Some(Intersection { distance: d, .. }) if light.distance(&point) > d => 0.0,
