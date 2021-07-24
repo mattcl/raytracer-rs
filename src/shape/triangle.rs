@@ -1,12 +1,10 @@
 use crate::{
-    material::{Material, TextureCoord},
-    math::{Point3D, Vector3, EPSILON},
+    material::{Material, TextureCoord, Textured},
+    math::{Matrix4, Point2D, Point3D, Vector3, EPSILON},
     ray::Ray,
 };
 
-use super::{Intersect, Shape};
-
-pub struct Vertex(pub Vector3);
+use super::{Intersect, Intersection, Shape, Transformable};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Triangle {
@@ -19,17 +17,18 @@ pub struct Triangle {
 
 impl Triangle {
     pub fn new(p0: Point3D, p1: Point3D, p2: Point3D) -> Self {
-        Self::with_material(p0, p1, p2, Material::default())
-    }
-
-    pub fn with_material(p0: Point3D, p1: Point3D, p2: Point3D, material: Material) -> Self {
         Self {
             p0,
             p1,
             p2,
-            material,
+            material: Material::default(),
             raw_normal: (p1 - p0).cross(p2 - p0),
         }
+    }
+
+    pub fn with_material(mut self, material: Material) -> Self {
+        self.material = material;
+        self
     }
 
     pub fn material(&self) -> &Material {
@@ -38,39 +37,17 @@ impl Triangle {
 }
 
 impl Intersect for Triangle {
-    fn intersect(&self, ray: &Ray) -> Option<f64> {
-        let v0v1 = self.p1 - self.p0;
-        let v0v2 = self.p2 - self.p0;
-        let pvec = ray.direction().cross(v0v2);
-        let det = v0v1.dot(pvec);
-
-        if det < EPSILON {
-            return None;
-        }
-
-        let inv_det = 1.0 / det;
-
-        let tvec = ray.origin() - self.p0;
-        let u = tvec.dot(pvec) * inv_det;
-
-        if u < 0.0 || u > 1.0 {
-            return None;
-        }
-
-        let qvec = tvec.cross(v0v1);
-        let v = ray.direction().dot(qvec) * inv_det;
-
-        if v < 0.0 || u + v > 1.0 {
-            return None;
-        }
-
-        Some(v0v2.dot(qvec) * inv_det)
+    fn intersect<'a>(&self, ray: &Ray, shape_ref: &'a Shape) -> Option<Intersection<'a>> {
+        triangle_intersect(&self.p0, &self.p1, &self.p2, ray)
+            .and_then(|(dist, _)| Some(Intersection::new(dist, shape_ref)))
     }
 
     fn normal_at(&self, _point: &Point3D) -> Option<Vector3> {
         Some(self.raw_normal.normalize())
     }
+}
 
+impl Textured for Triangle {
     fn texture_coord(&self, point: &Point3D) -> TextureCoord {
         let n = self.raw_normal;
         let denom = n.dot(n);
@@ -83,7 +60,13 @@ impl Intersect for Triangle {
         let vp2 = point - self.p2;
         let v = n.dot(edge2.cross(vp2));
 
-        TextureCoord::new(u / denom, v / denom, self.material().scale)
+        TextureCoord::new(Point2D::new(u / denom, v / denom), self.material().scale)
+    }
+}
+
+impl Transformable for Triangle {
+    fn transform(&mut self, _matrix: &Matrix4) {
+        // nothing for now
     }
 }
 
@@ -91,4 +74,46 @@ impl From<Triangle> for Shape {
     fn from(t: Triangle) -> Self {
         Shape::Triangle(t)
     }
+}
+
+pub fn triangle_intersect(
+    p0: &Point3D,
+    p1: &Point3D,
+    p2: &Point3D,
+    ray: &Ray,
+) -> Option<(f64, Point2D)> {
+    let dir = ray.direction();
+    let v0v1 = p1 - p0;
+    let v0v2 = p2 - p0;
+    let pvec = dir.cross(v0v2);
+    let det = v0v1.dot(pvec);
+
+    if det < EPSILON {
+        return None;
+    }
+
+    let inv_det = 1.0 / det;
+
+    let tvec = ray.origin() - p0;
+    let u = tvec.dot(pvec) * inv_det;
+
+    if u < 0.0 || u > 1.0 {
+        return None;
+    }
+
+    let qvec = tvec.cross(v0v1);
+    let v = dir.dot(qvec) * inv_det;
+
+    if v < 0.0 || u + v > 1.0 {
+        return None;
+    }
+
+    let d = v0v2.dot(qvec) * inv_det;
+
+    // the triangle is behind us
+    if d < 0.0 {
+        return None;
+    }
+
+    Some((d, Point2D::new(u, v)))
 }

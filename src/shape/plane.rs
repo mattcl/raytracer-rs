@@ -1,9 +1,11 @@
 use crate::{
-    material::{Material, TextureCoord},
-    math::{Point3D, Vector3},
+    material::{Material, TextureCoord, Textured},
+    math::{Matrix4, Point2D, Point3D, Vector3},
     ray::Ray,
     shape::{Intersect, Shape},
 };
+
+use super::{Intersection, Transformable};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Plane {
@@ -16,10 +18,6 @@ pub struct Plane {
 
 impl Plane {
     pub fn new(point: Point3D, normal: Vector3) -> Self {
-        Self::with_material(point, normal, Material::default())
-    }
-
-    pub fn with_material(point: Point3D, normal: Vector3, material: Material) -> Self {
         let mut tex_x = normal.cross(Vector3::K);
         if tex_x.magnitude() == 0.0 {
             tex_x = normal.cross(Vector3::J);
@@ -31,10 +29,15 @@ impl Plane {
         Self {
             point,
             normal,
-            material,
+            material: Material::default(),
             tex_x,
             tex_y,
         }
+    }
+
+    pub fn with_material(mut self, material: Material) -> Self {
+        self.material = material;
+        self
     }
 
     pub fn material(&self) -> &Material {
@@ -43,7 +46,7 @@ impl Plane {
 }
 
 impl Intersect for Plane {
-    fn intersect(&self, ray: &Ray) -> Option<f64> {
+    fn intersect<'a>(&self, ray: &Ray, shape_ref: &'a Shape) -> Option<Intersection<'a>> {
         let denominator = ray.direction().dot(-self.normal);
         if denominator < 1e-6_f64 {
             return None;
@@ -55,16 +58,27 @@ impl Intersect for Plane {
             return None;
         }
 
-        Some(d)
+        Some(Intersection::new(d, shape_ref))
     }
 
     fn normal_at(&self, _point: &Point3D) -> Option<Vector3> {
         Some(self.normal)
     }
+}
 
+impl Textured for Plane {
     fn texture_coord(&self, point: &Point3D) -> TextureCoord {
         let v = point - self.point;
-        TextureCoord::new(v.dot(self.tex_x), v.dot(self.tex_y), self.material.scale)
+        TextureCoord::new(
+            Point2D::new(v.dot(self.tex_x), v.dot(self.tex_y)),
+            self.material.scale,
+        )
+    }
+}
+
+impl Transformable for Plane {
+    fn transform(&mut self, _matrix: &Matrix4) {
+        // nothing for now
     }
 }
 

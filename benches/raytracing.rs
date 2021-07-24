@@ -21,41 +21,36 @@ pub fn bench(c: &mut Criterion) {
 
     scene.set_max_generations(7);
 
-    scene.add_shape(Sphere::with_material(
-        Point3D::new(-5.0, 0.0, 8.0),
-        5.0,
-        Material::new(Color::BLUE).surface(Surface::Reflective(1.0)),
-    ));
+    scene.add_shape(
+        Sphere::new(Point3D::new(-5.0, 0.0, 8.0), 5.0)
+            .with_material(Material::new(Color::BLUE).with_surface(Surface::Reflective(1.0))),
+    );
 
-    scene.add_shape(Sphere::with_material(
-        Point3D::new(5.0, 0.0, 0.0),
-        6.0,
-        Material::new(Checker::default()).scale(4.0),
-    ));
+    scene.add_shape(
+        Sphere::new(Point3D::new(5.0, 0.0, 0.0), 6.0)
+            .with_material(Material::new(Checker::default()).with_scale(5.0)),
+    );
 
-    scene.add_shape(Sphere::with_material(
-        Point3D::new(-5.0, 0.0, 1.0),
-        2.0,
-        Material::new(Checker::new(Color::RED)).scale(2.0),
-    ));
+    scene.add_shape(
+        Sphere::new(Point3D::new(-5.0, 0.0, 1.0), 2.0)
+            .with_material(Material::new(Checker::new(Color::RED)).with_scale(2.0)),
+    );
 
-    scene.add_shape(Sphere::with_material(
-        Point3D::new(0.0, 35.0, -10.0),
-        15.0,
-        Material::new(Color::BLUE),
-    ));
+    scene.add_shape(
+        Sphere::new(Point3D::new(0.0, 35.0, -10.0), 15.0).with_material(Material::new(Color::BLUE)),
+    );
 
-    scene.add_shape(Plane::with_material(
-        Point3D::new(0.0, -10.0, 0.0),
-        Vector3::J,
-        Material::new(Checker::new(Color::WHITE).secondary(Color::BLACK))
-            .surface(Surface::Reflective(0.3))
-            .scale(0.1),
-    ));
+    scene.add_shape(
+        Plane::new(Point3D::new(0.0, -10.0, 0.0), Vector3::J).with_material(
+            Material::new(Checker::new(Color::WHITE).with_secondary(Color::BLACK))
+                .with_surface(Surface::Reflective(0.3))
+                .with_scale(0.1),
+        ),
+    );
 
     scene.add_light(DirectionalLight::default());
     scene.add_light(DirectionalLight::new(
-        Vector3::new(0.2, -1.0, 0.2).normalize(),
+        Vector3::new([0.2, -1.0, 0.2]).normalize(),
         Color::WHITE,
         2.0,
     ));

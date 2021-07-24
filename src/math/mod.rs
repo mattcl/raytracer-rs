@@ -1,6 +1,8 @@
-pub use point::Point3D;
-pub use vector::Vector3;
+pub use matrix::Matrix4;
+pub use point::{Point2D, Point3D};
+pub use vector::{Vector2, Vector3};
 
+mod matrix;
 mod point;
 mod vector;
 

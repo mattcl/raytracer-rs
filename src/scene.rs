@@ -7,10 +7,10 @@ use crate::{
     camera::Camera,
     color::Color,
     light::Light,
-    material::Surface,
+    material::{Surface, TextureCoord, Textured},
     math::{Point3D, Vector3},
     ray::Ray,
-    shape::{Intersect, Intersection, Shape},
+    shape::{Intersect, Intersection, Shape, Transformable},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -71,7 +71,10 @@ impl Scene {
         self.cameras.push(camera);
     }
 
-    pub fn add_shape(&mut self, shape: impl Into<Shape>) {
+    pub fn add_shape<T>(&mut self, shape: T)
+    where
+        T: Intersect + Textured + Transformable + Into<Shape>,
+    {
         self.shapes.push(shape.into());
     }
 
@@ -137,9 +140,14 @@ impl Scene {
         img
     }
 
-    fn diffuse(&self, shape: &Shape, point: &Point3D, normal: &Vector3) -> Color {
+    fn diffuse(
+        &self,
+        shape: &Shape,
+        point: &Point3D,
+        normal: &Vector3,
+        texture_coord: &TextureCoord,
+    ) -> Color {
         let mut color = Color::BLACK;
-        let tex_coord = shape.texture_coord(&point);
 
         for light in &self.lights {
             let dir = light.direction_from(point);
@@ -152,10 +160,34 @@ impl Scene {
 
             let power = normal.dot(dir).max(0.0) * intensity;
             let reflected = shape.material().albedo / PI;
-            color = color + shape.material().color(&tex_coord) * light.color() * power * reflected;
+            color =
+                color + shape.material().color(&texture_coord) * light.color() * power * reflected;
         }
 
         color
+    }
+
+    fn fresnel(&self, ray: &Ray, normal: &Vector3, refractive_index: f64) -> f64 {
+        let i_dot_n = ray.direction().dot(normal);
+        let mut eta_i = 1.0;
+        let mut eta_t = refractive_index;
+
+        if i_dot_n > 0.0 {
+            eta_i = eta_t;
+            eta_t = 1.0;
+        }
+
+        let st = eta_i / eta_t * (1.0 - i_dot_n * i_dot_n).max(0.0).sqrt();
+        if st > 1.0 {
+            return 1.0;
+        }
+
+        let ct = (1.0 - st * st).max(0.0).sqrt();
+        let ci = ct.abs();
+        let s = ((eta_t * ci) - (eta_i * ct)) / ((eta_t * ci) + (eta_i * ct));
+        let p = ((eta_i * ci) - (eta_t * ct)) / ((eta_i * ci) + (eta_t * ct));
+
+        (s * s + p * p) / 2.0
     }
 
     fn color_at(&self, ray: &Ray, intersection: &Intersection) -> Option<Color> {
@@ -163,16 +195,50 @@ impl Scene {
             return Some(Color::BLACK);
         }
 
-        // TODO: obviously not this - MCL - 2021-07-18
-        let point = ray.point_at(intersection.distance);
-        let hit_normal = intersection.obj.normal_at(&point)?;
-        let mut color = self.diffuse(intersection.obj, &point, &hit_normal);
+        let point = match intersection.location {
+            Some(point) => point,
+            None => ray.point_at(intersection.distance),
+        };
 
-        if let Surface::Reflective(reflectivity) = intersection.obj.material().surface {
-            let reflection = ray.reflect(&hit_normal, &point, 1e-10_f64);
-            color = color * (1.0 - reflectivity);
-            color = color + self.color_for(&reflection) * reflectivity;
-        }
+        let hit_normal = match intersection.normal {
+            Some(normal) => normal,
+            None => intersection.obj.normal_at(&point)?,
+        };
+
+        let texture_coord = match intersection.tex_coord {
+            Some(coord) => coord,
+            None => intersection.obj.texture_coord(&point),
+        };
+
+        let color = match intersection.obj.material().surface {
+            Surface::Diffuse => self.diffuse(intersection.obj, &point, &hit_normal, &texture_coord),
+            Surface::Reflective(reflectivity) => {
+                let mut color = self.diffuse(intersection.obj, &point, &hit_normal, &texture_coord);
+                let reflection = ray.reflect(&hit_normal, &point, 1e-10_f64);
+                color = color * (1.0 - reflectivity);
+                color + self.color_for(&reflection) * reflectivity
+            }
+            Surface::Refractive {
+                index,
+                transparency,
+            } => {
+                let mut refract_color = Color::BLACK;
+                let kr = self.fresnel(ray, &hit_normal, index);
+                let surface_color = intersection.obj.material().color(&texture_coord);
+
+                if kr < 1.0 {
+                    if let Some(transmission) = ray.refract(&hit_normal, &point, 1e-10_f64, index) {
+                        refract_color = self.color_for(&transmission);
+                    }
+                }
+
+                let reflection = ray.reflect(&hit_normal, &point, 1e-10_f64);
+                let reflect_color = self.color_for(&reflection);
+                let color = (1.0 - kr) * refract_color + kr * reflect_color;
+
+                color * transparency * surface_color
+            }
+        };
 
         Some(color)
     }
@@ -187,7 +253,7 @@ impl Scene {
     fn get_closest_intersection(&self, ray: &Ray) -> Option<Intersection> {
         self.shapes
             .iter()
-            .filter_map(|s| s.intersect(ray).and_then(|i| Some(Intersection::new(i, s))))
+            .filter_map(|s| s.intersect(ray))
             .min_by(|a, b| a.partial_cmp(&b).unwrap())
     }
 }

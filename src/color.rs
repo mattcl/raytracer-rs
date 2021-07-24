@@ -71,13 +71,13 @@ impl AsRef<Color> for Color {
 
 impl From<Vector3> for Color {
     fn from(v: Vector3) -> Self {
-        Color::new(v.x, v.y, v.z)
+        Color::new(v.x(), v.y(), v.z())
     }
 }
 
 impl From<Color> for Vector3 {
     fn from(c: Color) -> Self {
-        Vector3::new(c.r, c.g, c.b)
+        [c.r, c.g, c.b].into()
     }
 }
 

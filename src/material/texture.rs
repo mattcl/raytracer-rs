@@ -1,6 +1,6 @@
 use image::{DynamicImage, GenericImageView};
 
-use crate::color::Color;
+use crate::{color::Color, math::Point2D};
 
 use super::Checker;
 
@@ -32,20 +32,19 @@ impl From<DynamicImage> for Texture {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TextureCoord {
-    pub x: f64,
-    pub y: f64,
+    pub uv: Point2D,
     pub scale: f64,
 }
 
 impl TextureCoord {
-    pub fn new(x: f64, y: f64, scale: f64) -> Self {
-        TextureCoord { x, y, scale }
+    pub fn new(uv: Point2D, scale: f64) -> Self {
+        TextureCoord { uv, scale }
     }
 
     pub fn scale_wrap(&self, scale: f64, max_x: u32, max_y: u32) -> (u32, u32) {
         (
-            TextureCoord::wrap_v(self.x * scale, max_x),
-            TextureCoord::wrap_v(self.y * scale, max_y),
+            TextureCoord::wrap_v(self.uv.x() * scale, max_x),
+            TextureCoord::wrap_v(self.uv.y() * scale, max_y),
         )
     }
 

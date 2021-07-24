@@ -26,7 +26,7 @@ impl DirectionalLight {
 
 impl Default for DirectionalLight {
     fn default() -> Self {
-        Self::new(Vector3::new(0.0, -1.0, 0.0), Color::WHITE, 1.0)
+        Self::new([0.0, -1.0, 0.0].into(), Color::WHITE, 1.0)
     }
 }
 

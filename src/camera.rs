@@ -67,8 +67,8 @@ mod tests {
     #[test]
     fn default() {
         let c = Camera::default();
-        assert_eq!(c.forward, Vector3::new(0.0, 0.0, 1.0));
-        assert_eq!(c.up, Vector3::new(0.0, 1.0, 0.0));
-        assert_eq!(c.right, Vector3::new(1.0, 0.0, 0.0));
+        assert_eq!(c.forward, Vector3::new([0.0, 0.0, 1.0]));
+        assert_eq!(c.up, Vector3::new([0.0, 1.0, 0.0]));
+        assert_eq!(c.right, Vector3::new([1.0, 0.0, 0.0]));
     }
 }

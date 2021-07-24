@@ -1,76 +1,30 @@
+use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use std::{
+    convert::{TryFrom, TryInto},
     fmt::Display,
-    ops::{Add, Div, Mul, Neg, Sub},
+    ops::{Index, IndexMut, Neg},
 };
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
-pub struct Vector3 {
-    pub x: f64,
-    pub y: f64,
-    pub z: f64,
-}
+use crate::error::{RTError, Result};
 
-impl Vector3 {
-    pub const ZERO: Self = Self {
-        x: 0.0,
-        y: 0.0,
-        z: 0.0,
-    };
-    pub const I: Self = Self {
-        x: 1.0,
-        y: 0.0,
-        z: 0.0,
-    };
-    pub const J: Self = Self {
-        x: 0.0,
-        y: 1.0,
-        z: 0.0,
-    };
-    pub const K: Self = Self {
-        x: 0.0,
-        y: 0.0,
-        z: 1.0,
-    };
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+pub struct Vector<const N: usize>([f64; N]);
 
-    pub fn new<T, M, N>(x: T, y: M, z: N) -> Self
-    where
-        T: Into<f64> + Copy,
-        M: Into<f64> + Copy,
-        N: Into<f64> + Copy,
-    {
-        Self {
-            x: x.into(),
-            y: y.into(),
-            z: z.into(),
-        }
+impl<const N: usize> Vector<N> {
+    pub fn new(data: [f64; N]) -> Self {
+        Self(data)
     }
 
     pub fn dot(&self, other: impl AsRef<Self>) -> f64 {
         let other = other.as_ref();
-        self.x * other.x + self.y * other.y + self.z * other.z
-    }
-
-    pub fn cross(&self, other: impl AsRef<Self>) -> Self {
-        let Self {
-            x: bx,
-            y: by,
-            z: bz,
-        } = self;
-        let Self {
-            x: cx,
-            y: cy,
-            z: cz,
-        } = other.as_ref();
-
-        Self {
-            x: by * cz - bz * cy,
-            y: bz * cx - bx * cz,
-            z: bx * cy - by * cx,
-        }
+        self.0
+            .iter()
+            .zip(other.0)
+            .fold(0.0, |acc, (a, b)| acc + *a * b)
     }
 
     pub fn norm(&self) -> f64 {
-        self.x * self.x + self.y * self.y + self.z * self.z
+        self.dot(&self)
     }
 
     pub fn magnitude(&self) -> f64 {
@@ -78,46 +32,66 @@ impl Vector3 {
     }
 
     pub fn normalize(&self) -> Self {
-        self / self.magnitude()
+        // work around limitation in auto_ops with regard to generics
+        let m = self.magnitude();
+        self.map(|a| a / m)
     }
 
-    fn zip<F>(&self, other: impl AsRef<Self>, f: F) -> Self
+    pub fn zip<F>(&self, other: impl AsRef<Self>, f: F) -> Self
     where
         F: Fn(f64, f64) -> f64,
     {
         let other = other.as_ref();
-        Self {
-            x: f(self.x, other.x),
-            y: f(self.y, other.y),
-            z: f(self.z, other.z),
+        let mut out = [0.0; N];
+        for i in 0..N {
+            out[i] = f(self[i], other[i]);
         }
+
+        Self(out)
     }
 
-    fn map<F>(&self, f: F) -> Self
+    pub fn map<F>(&self, f: F) -> Self
     where
         F: Fn(f64) -> f64,
     {
-        Self {
-            x: f(self.x),
-            y: f(self.y),
-            z: f(self.z),
+        let mut out = [0.0; N];
+
+        for i in 0..N {
+            out[i] = f(self[i]);
         }
+
+        Self(out)
     }
 }
 
-impl Display for Vector3 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{}, {}, {}]", self.x, self.y, self.z)
-    }
-}
-
-impl AsRef<Vector3> for Vector3 {
-    fn as_ref(&self) -> &Self {
+impl<const N: usize> AsRef<Vector<N>> for Vector<N> {
+    fn as_ref(&self) -> &Vector<N> {
         &self
     }
 }
 
-impl Neg for Vector3 {
+impl<const N: usize> From<[f64; N]> for Vector<N> {
+    fn from(a: [f64; N]) -> Self {
+        Self(a)
+    }
+}
+
+impl<const N: usize> TryFrom<Vec<f64>> for Vector<N> {
+    type Error = RTError;
+
+    fn try_from(value: Vec<f64>) -> Result<Self> {
+        if value.len() != N {
+            return Err(RTError::Error(format!(
+                "Could not make a Vector<{}> from: {:?}",
+                N, value
+            )));
+        }
+
+        Ok(Self(value.try_into().unwrap()))
+    }
+}
+
+impl<const N: usize> Neg for Vector<N> {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
@@ -125,213 +99,251 @@ impl Neg for Vector3 {
     }
 }
 
-impl Neg for &Vector3 {
-    type Output = Vector3;
+impl<const N: usize> Neg for &Vector<N> {
+    type Output = Vector<N>;
 
     fn neg(self) -> Self::Output {
         self.map(|a| -a)
     }
 }
 
-impl<T> Add<T> for Vector3
-where
-    T: AsRef<Vector3>,
-{
-    type Output = Self;
-
-    fn add(self, rhs: T) -> Self::Output {
-        self.zip(rhs, |a, b| a + b)
+impl<const N: usize> Default for Vector<N> {
+    fn default() -> Self {
+        Self([0.0; N])
     }
 }
 
-impl<T> Add<T> for &Vector3
-where
-    T: AsRef<Vector3>,
-{
-    type Output = Vector3;
-
-    fn add(self, rhs: T) -> Self::Output {
-        self.zip(rhs, |a, b| a + b)
+impl<const N: usize> Display for Vector<N> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "v: {:?}", self.0)
     }
 }
 
-impl<T> Sub<T> for Vector3
-where
-    T: AsRef<Vector3>,
-{
-    type Output = Self;
+impl<const N: usize> Index<usize> for Vector<N> {
+    type Output = f64;
 
-    fn sub(self, rhs: T) -> Self::Output {
-        self.zip(rhs, |a, b| a - b)
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
     }
 }
 
-impl<T> Sub<T> for &Vector3
-where
-    T: AsRef<Vector3>,
-{
-    type Output = Vector3;
-
-    fn sub(self, rhs: T) -> Self::Output {
-        self.zip(rhs, |a, b| a - b)
+impl<const N: usize> IndexMut<usize> for Vector<N> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.0[index]
     }
 }
 
-impl Mul<f64> for Vector3 {
-    type Output = Self;
+/// Vector2
+pub type Vector2 = Vector<2>;
 
-    fn mul(self, rhs: f64) -> Self::Output {
-        self.map(|a| a * rhs)
+impl Vector2 {
+    pub const ZERO: Self = Self([0.0; 2]);
+    pub const I: Self = Self([1.0, 0.0]);
+    pub const J: Self = Self([0.0, 1.0]);
+
+    pub fn x(&self) -> f64 {
+        self[0]
+    }
+
+    pub fn y(&self) -> f64 {
+        self[1]
     }
 }
 
-impl Mul<f64> for &Vector3 {
-    type Output = Vector3;
+// So, because auto_ops doesn't support generics yet, we have to have one of
+// these blocks per vector type alias
+impl_op_ex!(+ |a: &Vector2, b: &Vector2| -> Vector2 { a.zip(b, |x, y| x + y) });
+impl_op_ex!(-|a: &Vector2, b: &Vector2| -> Vector2 { a.zip(b, |x, y| x - y) });
+impl_op_ex_commutative!(*|a: &Vector2, b: f64| -> Vector2 { a.map(|x| x * b) });
+impl_op_ex!(/ |a: &Vector2, b: f64| -> Vector2 { a.map(|x| x / b) });
 
-    fn mul(self, rhs: f64) -> Self::Output {
-        self.map(|a| a * rhs)
+/// Vector3
+pub type Vector3 = Vector<3>;
+
+impl Vector3 {
+    pub const ZERO: Self = Self([0.0; 3]);
+    pub const I: Self = Self([1.0, 0.0, 0.0]);
+    pub const J: Self = Self([0.0, 1.0, 0.0]);
+    pub const K: Self = Self([0.0, 0.0, 1.0]);
+
+    pub fn x(&self) -> f64 {
+        self[0]
+    }
+
+    pub fn y(&self) -> f64 {
+        self[1]
+    }
+
+    pub fn z(&self) -> f64 {
+        self[2]
+    }
+
+    pub fn cross(&self, other: impl AsRef<Self>) -> Self {
+        let Self([bx, by, bz]) = self;
+        let Self([cx, cy, cz]) = other.as_ref();
+
+        Self([by * cz - bz * cy, bz * cx - bx * cz, bx * cy - by * cx])
     }
 }
 
-impl Mul<Vector3> for f64 {
-    type Output = Vector3;
+impl_op_ex!(+ |a: &Vector3, b: &Vector3| -> Vector3 { a.zip(b, |x, y| x + y) });
+impl_op_ex!(-|a: &Vector3, b: &Vector3| -> Vector3 { a.zip(b, |x, y| x - y) });
+impl_op_ex_commutative!(*|a: &Vector3, b: f64| -> Vector3 { a.map(|x| x * b) });
+impl_op_ex!(/ |a: &Vector3, b: f64| -> Vector3 { a.map(|x| x / b) });
 
-    fn mul(self, rhs: Vector3) -> Self::Output {
-        rhs.map(|a| a * self)
+/// Vector4
+pub type Vector4 = Vector<4>;
+
+impl Vector4 {
+    pub const ZERO: Self = Self([0.0; 4]);
+    pub const I: Self = Self([1.0, 0.0, 0.0, 0.0]);
+    pub const J: Self = Self([0.0, 1.0, 0.0, 0.0]);
+    pub const K: Self = Self([0.0, 0.0, 1.0, 0.0]);
+    pub const W: Self = Self([0.0, 0.0, 0.0, 1.0]);
+
+    pub fn x(&self) -> f64 {
+        self[0]
+    }
+
+    pub fn y(&self) -> f64 {
+        self[1]
+    }
+
+    pub fn z(&self) -> f64 {
+        self[2]
+    }
+
+    pub fn w(&self) -> f64 {
+        self[3]
     }
 }
 
-impl Mul<&Vector3> for f64 {
-    type Output = Vector3;
+impl_op_ex!(+ |a: &Vector4, b: &Vector4| -> Vector4 { a.zip(b, |x, y| x + y) });
+impl_op_ex!(-|a: &Vector4, b: &Vector4| -> Vector4 { a.zip(b, |x, y| x - y) });
+impl_op_ex_commutative!(*|a: &Vector4, b: f64| -> Vector4 { a.map(|x| x * b) });
+impl_op_ex!(/ |a: &Vector4, b: f64| -> Vector4 { a.map(|x| x / b) });
 
-    fn mul(self, rhs: &Vector3) -> Self::Output {
-        rhs.map(|a| a * self)
+// Convenience conversions
+impl From<Vector2> for Vector3 {
+    fn from(v2: Vector2) -> Self {
+        Self([v2[0], v2[1], 0.0])
+    }
+}
+impl From<Vector2> for Vector4 {
+    fn from(v2: Vector2) -> Self {
+        Self([v2[0], v2[1], 0.0, 0.0])
     }
 }
 
-impl Div<f64> for Vector3 {
-    type Output = Self;
-
-    fn div(self, rhs: f64) -> Self::Output {
-        self.map(|a| a / rhs)
+impl From<Vector3> for Vector4 {
+    fn from(v3: Vector3) -> Self {
+        Self([v3[0], v3[1], v3[2], 1.0])
     }
 }
 
-impl Div<f64> for &Vector3 {
-    type Output = Vector3;
-
-    fn div(self, rhs: f64) -> Self::Output {
-        self.map(|a| a / rhs)
+impl From<Vector4> for Vector3 {
+    fn from(v4: Vector4) -> Self {
+        Self([v4[0], v4[1], v4[2]])
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    mod vec3 {
+        use super::super::*;
+        #[test]
+        fn negation() {
+            let a = Vector3::new([1.0, 10.0, 100.0]);
+            let b = Vector3::new([-1.0, -10.0, -100.0]);
 
-    #[test]
-    fn negation() {
-        let a = Vector3::new(1.0, 10.0, 100.0);
-        let b = Vector3::new(-1.0, -10.0, -100.0);
+            assert_eq!(-a, b);
+            assert_eq!(-&a, b);
+        }
 
-        assert_eq!(-a, b);
-        assert_eq!(-&a, b);
-    }
+        #[test]
+        fn addition() {
+            let a = Vector3::new([1.0, 10.0, 100.0]);
+            let b = Vector3::new([2.0, 20.0, 200.0]);
+            let c = Vector3::new([3.0, 30.0, 300.0]);
 
-    #[test]
-    fn addition() {
-        let a = Vector3::new(1.0, 10.0, 100.0);
-        let b = Vector3::new(2.0, 20.0, 200.0);
-        let c = Vector3::new(3.0, 30.0, 300.0);
+            assert_eq!(a + b, c);
+            assert_eq!(a + &b, c);
+            assert_eq!(&a + b, c);
+            assert_eq!(&a + &b, c);
+        }
 
-        assert_eq!(a + b, c);
-        assert_eq!(a + &b, c);
-        assert_eq!(&a + b, c);
-        assert_eq!(&a + &b, c);
-    }
+        #[test]
+        fn subtraction() {
+            let a = Vector3::new([1.0, 10.0, 100.0]);
+            let b = Vector3::new([2.0, 20.0, 200.0]);
+            let c = Vector3::new([-1.0, -10.0, -100.0]);
 
-    #[test]
-    fn subtraction() {
-        let a = Vector3::new(1.0, 10.0, 100.0);
-        let b = Vector3::new(2.0, 20.0, 200.0);
-        let c = Vector3::new(-1.0, -10.0, -100.0);
+            assert_eq!(a - b, c);
+            assert_eq!(a - &b, c);
+            assert_eq!(&a - b, c);
+            assert_eq!(&a - &b, c);
+        }
 
-        assert_eq!(a - b, c);
-        assert_eq!(a - &b, c);
-        assert_eq!(&a - b, c);
-        assert_eq!(&a - &b, c);
-    }
+        #[test]
+        fn multiplication() {
+            let a = Vector3::new([1.0, 10.0, 100.0]);
+            let b = 2.0;
+            let c = Vector3::new([2.0, 20.0, 200.0]);
 
-    #[test]
-    fn multiplication() {
-        let a = Vector3::new(1.0, 10.0, 100.0);
-        let b = 2.0;
-        let c = Vector3::new(2.0, 20.0, 200.0);
+            assert_eq!(a * b, c);
+            assert_eq!(&a * b, c);
+            assert_eq!(b * a, c);
+            assert_eq!(b * &a, c);
+        }
 
-        assert_eq!(a * b, c);
-        assert_eq!(&a * b, c);
-        assert_eq!(b * a, c);
-        assert_eq!(b * &a, c);
-    }
+        #[test]
+        fn division() {
+            let a = Vector3::new([1.0, 10.0, 100.0]);
+            let b = 2.0;
+            let c = Vector3::new([0.5, 5.0, 50.0]);
 
-    #[test]
-    fn division() {
-        let a = Vector3::new(1.0, 10.0, 100.0);
-        let b = 2.0;
-        let c = Vector3::new(0.5, 5.0, 50.0);
+            assert_eq!(a / b, c);
+            assert_eq!(&a / b, c);
+        }
 
-        assert_eq!(a / b, c);
-        assert_eq!(&a / b, c);
-    }
+        #[test]
+        fn dotproduct() {
+            let a = Vector3::new([9.0, 2.0, 7.0]);
+            let b = Vector3::new([4.0, 8.0, 10.0]);
+            let c = 122.0;
 
-    #[test]
-    fn dotproduct() {
-        let a = Vector3::new(9.0, 2.0, 7.0);
-        let b = Vector3::new(4.0, 8.0, 10.0);
-        let c = 122.0;
+            assert_eq!(a.dot(b), c);
+            assert_eq!(a.dot(&b), c);
+            assert_eq!(b.dot(a), c);
+            assert_eq!(b.dot(&a), c);
+        }
 
-        assert_eq!(a.dot(b), c);
-        assert_eq!(a.dot(&b), c);
-        assert_eq!(b.dot(a), c);
-        assert_eq!(b.dot(&a), c);
-    }
+        #[test]
+        fn crossproduct() {
+            let a = Vector3::new([2.0, 3.0, 4.0]);
+            let b = Vector3::new([5.0, 6.0, 7.0]);
+            let c = Vector3::new([-3.0, 6.0, -3.0]);
 
-    #[test]
-    fn crossproduct() {
-        let a = Vector3::new(2.0, 3.0, 4.0);
-        let b = Vector3::new(5.0, 6.0, 7.0);
-        let c = Vector3::new(-3.0, 6.0, -3.0);
+            assert_eq!(a.cross(b), c);
+            assert_eq!(a.cross(&b), c);
+        }
 
-        assert_eq!(a.cross(b), c);
-        assert_eq!(a.cross(&b), c);
-    }
+        #[test]
+        fn magnitude() {
+            let a = Vector3::new([2.0, 3.0, 4.0]);
+            let b = (a.x() * a.x() + a.y() * a.y() + a.z() * a.z()).sqrt();
 
-    #[test]
-    fn magnitude() {
-        let a = Vector3::new(2.0, 3.0, 4.0);
-        let b = (a.x * a.x + a.y * a.y + a.z * a.z).sqrt();
+            assert_eq!(a.magnitude(), b);
+        }
 
-        assert_eq!(a.magnitude(), b);
-    }
+        #[test]
+        fn normalize() {
+            let a = Vector3::new([2.0, 3.0, 4.0]);
+            let b = a / a.magnitude();
 
-    #[test]
-    fn normalize() {
-        let a = Vector3::new(2.0, 3.0, 4.0);
-        let b = a / a.magnitude();
+            assert_eq!(a.normalize(), b);
 
-        assert_eq!(a.normalize(), b);
-
-        assert_eq!(Vector3::K.normalize(), Vector3::K);
-    }
-
-    #[test]
-    fn ergonomics() {
-        // can consruct from anything that satisfies Into<Float> + Copy
-        let a = Vector3::new(2, 3, 4);
-        let b = Vector3::new(2, 3.0, 4_f32);
-        let c = Vector3::new(2.0, 3.0, 4.0);
-
-        assert_eq!(a, c);
-        assert_eq!(b, c);
+            assert_eq!(Vector3::K.normalize(), Vector3::K);
+        }
     }
 }
