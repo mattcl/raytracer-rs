@@ -10,6 +10,8 @@ pub enum RTError {
 
     ParseFloat(ParseFloatError),
     ParseInt(ParseIntError),
+
+    IOError(std::io::Error),
 }
 
 impl std::error::Error for RTError {
@@ -19,6 +21,7 @@ impl std::error::Error for RTError {
             RTError::InvalidGeo(_) => None,
             RTError::ParseFloat(ref err) => Some(err),
             RTError::ParseInt(ref err) => Some(err),
+            RTError::IOError(ref err) => Some(err),
         }
     }
 }
@@ -34,6 +37,7 @@ impl std::fmt::Display for RTError {
             }
             RTError::ParseFloat(ref err) => err.fmt(f),
             RTError::ParseInt(ref err) => err.fmt(f),
+            RTError::IOError(ref err) => err.fmt(f),
         }
     }
 }
@@ -47,5 +51,11 @@ impl From<ParseFloatError> for RTError {
 impl From<ParseIntError> for RTError {
     fn from(err: ParseIntError) -> RTError {
         RTError::ParseInt(err)
+    }
+}
+
+impl From<std::io::Error> for RTError {
+    fn from(err: std::io::Error) -> RTError {
+        RTError::IOError(err)
     }
 }

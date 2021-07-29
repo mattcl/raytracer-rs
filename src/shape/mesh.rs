@@ -1,16 +1,17 @@
+use std::f64::{INFINITY, NEG_INFINITY};
+
 use crate::{
+    error::{RTError, Result},
+    geo::GeoMesh,
     material::{Material, TextureCoord, Textured},
     math::{Matrix4, Point2D, Point3D, Vector2, Vector3},
+    ply::Ply,
     ray::Ray,
-    util::GeoMesh,
 };
 
 use super::{
     triangle::triangle_intersect, BoundingBox, Intersect, Intersection, Shape, Transformable,
 };
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
-struct TriCoord(usize, usize, usize);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct Vertex {
@@ -26,6 +27,11 @@ impl Vertex {
             normal,
             texture_coord,
         }
+    }
+
+    pub fn transform(&mut self, matrix: &Matrix4, t_inv_matrix: &Matrix4) {
+        self.point = matrix * self.point;
+        self.normal = t_inv_matrix * self.normal;
     }
 }
 
@@ -109,8 +115,39 @@ impl Textured for TriangleMesh {
 }
 
 impl Transformable for TriangleMesh {
-    fn transform(&mut self, _matrix: &Matrix4) {
-        // nothing for now
+    fn transform(&mut self, matrix: &Matrix4) -> Result<()> {
+        self.wto = matrix.inverse().ok_or_else(|| {
+            RTError::Error(format!(
+                "Cannot transform with matrix {:#?} as it has no inverse",
+                matrix
+            ))
+        })?;
+        self.otw = matrix.clone();
+
+        let transpose = self.wto.transpose();
+
+        self.vertices
+            .iter_mut()
+            .for_each(|v| v.transform(matrix, &transpose));
+
+        let mut min = [INFINITY; 3];
+        let mut max = [NEG_INFINITY; 3];
+        for vertex in &self.vertices {
+            for i in 0..3 {
+                let v = vertex.point[i];
+                if v < min[i] {
+                    min[i] = v;
+                }
+
+                if v > max[i] {
+                    max[i] = v;
+                }
+            }
+        }
+
+        self.bounding_box = BoundingBox::new(min.into(), max.into());
+
+        Ok(())
     }
 }
 
@@ -159,6 +196,43 @@ impl From<GeoMesh> for TriangleMesh {
             triangles,
             triangle_normals,
             bounding_box: geo.bounding_box,
+            material: Material::default(),
+            wto: Matrix4::I,
+            otw: Matrix4::I,
+        }
+    }
+}
+
+impl From<Ply> for TriangleMesh {
+    fn from(ply: Ply) -> Self {
+        let mut num_triangles = 0;
+        let mut max_vertex_index = 0;
+
+        for i in 0..ply.faces.len() {
+            let face_size = ply.faces[i].len();
+            num_triangles += face_size - 2;
+            for j in 0..face_size {
+                if ply.faces[i][j] > max_vertex_index {
+                    max_vertex_index = ply.faces[i][j];
+                }
+            }
+        }
+
+        let mut triangles = Vec::with_capacity(num_triangles);
+        let mut triangle_normals = Vec::with_capacity(num_triangles);
+        for i in 0..ply.faces.len() {
+            for j in 0..ply.faces[i].len() - 2 {
+                triangles.push((ply.faces[i][0], ply.faces[i][j + 1], ply.faces[i][j + 2]));
+                triangle_normals.push(ply.face_normals[i]);
+            }
+        }
+
+        Self {
+            num_triangles,
+            vertices: ply.vertices,
+            triangles,
+            triangle_normals,
+            bounding_box: ply.bounding_box,
             material: Material::default(),
             wto: Matrix4::I,
             otw: Matrix4::I,

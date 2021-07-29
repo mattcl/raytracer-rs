@@ -5,7 +5,7 @@ use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 use super::{vector::Vector4, Point3D, Vector3};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
-pub struct Matrix4([[f64; 4]; 4]);
+pub struct Matrix4(pub [[f64; 4]; 4]);
 
 impl Matrix4 {
     pub const I: Self = Self([

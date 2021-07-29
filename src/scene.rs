@@ -1,6 +1,7 @@
 use std::f64::consts::PI;
 
 use image::{imageops, DynamicImage, GenericImage};
+use indicatif::{ProgressBar, ParallelProgressIterator};
 use rayon::prelude::*;
 
 use crate::{
@@ -89,7 +90,11 @@ impl Scene {
     pub fn par_raytrace(&self) -> Vec<DynamicImage> {
         self.cameras
             .iter()
-            .map(|c| self.par_raytrace_cam(c))
+            .enumerate()
+            .map(|(i, c)| {
+                println!("rendering camera {}", i);
+                self.par_raytrace_cam(c)
+            })
             .collect()
     }
 
@@ -114,12 +119,13 @@ impl Scene {
     }
 
     fn par_raytrace_cam(&self, camera: &Camera) -> DynamicImage {
+        let pb = ProgressBar::new(self.view.width as u64);
         let mut img = DynamicImage::new_rgb8(self.view.width, self.view.height);
-
         let d = (self.view.width as f64 / 2.0) / (camera.fov_radians() / 2.0).tan();
 
         (0..self.view.width)
             .into_par_iter()
+            .progress_with(pb)
             .map(|x| {
                 let mut partial = DynamicImage::new_rgb8(1, self.view.height);
                 for y in 0..self.view.height {

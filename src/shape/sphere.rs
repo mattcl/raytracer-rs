@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 
 use crate::{
     material::{Material, TextureCoord, Textured},
-    math::{Matrix4, Point2D, Point3D, Vector3},
+    math::{Point2D, Point3D, Vector3},
     ray::Ray,
     shape::{Intersect, Shape},
 };
@@ -78,11 +78,7 @@ impl Textured for Sphere {
     }
 }
 
-impl Transformable for Sphere {
-    fn transform(&mut self, _matrix: &Matrix4) {
-        // nothing for now
-    }
-}
+impl Transformable for Sphere {}
 
 impl From<Sphere> for Shape {
     fn from(s: Sphere) -> Self {

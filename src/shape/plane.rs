@@ -1,6 +1,6 @@
 use crate::{
     material::{Material, TextureCoord, Textured},
-    math::{Matrix4, Point2D, Point3D, Vector3},
+    math::{Point2D, Point3D, Vector3},
     ray::Ray,
     shape::{Intersect, Shape},
 };
@@ -76,11 +76,7 @@ impl Textured for Plane {
     }
 }
 
-impl Transformable for Plane {
-    fn transform(&mut self, _matrix: &Matrix4) {
-        // nothing for now
-    }
-}
+impl Transformable for Plane {}
 
 impl From<Plane> for Shape {
     fn from(p: Plane) -> Self {

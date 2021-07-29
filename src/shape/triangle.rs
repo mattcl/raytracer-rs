@@ -1,6 +1,6 @@
 use crate::{
     material::{Material, TextureCoord, Textured},
-    math::{Matrix4, Point2D, Point3D, Vector3, EPSILON},
+    math::{Point2D, Point3D, Vector3, EPSILON},
     ray::Ray,
 };
 
@@ -64,11 +64,7 @@ impl Textured for Triangle {
     }
 }
 
-impl Transformable for Triangle {
-    fn transform(&mut self, _matrix: &Matrix4) {
-        // nothing for now
-    }
-}
+impl Transformable for Triangle {}
 
 impl From<Triangle> for Shape {
     fn from(t: Triangle) -> Self {

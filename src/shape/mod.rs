@@ -4,6 +4,7 @@ pub use crate::shape::sphere::Sphere;
 pub use crate::shape::triangle::Triangle;
 
 use crate::{
+    error::Result,
     material::{Material, TextureCoord, Textured},
     math::{Matrix4, Point3D, Vector3},
     ray::Ray,
@@ -60,7 +61,9 @@ impl<'a> PartialOrd for Intersection<'a> {
 }
 
 pub trait Transformable {
-    fn transform(&mut self, matrix: &Matrix4);
+    fn transform(&mut self, _matrix: &Matrix4) -> Result<()> {
+        Ok(())
+    }
 
     fn world_to_object(&self) -> Option<&Matrix4> {
         None
@@ -180,7 +183,7 @@ impl Transformable for Shape {
         }
     }
 
-    fn transform(&mut self, matrix: &Matrix4) {
+    fn transform(&mut self, matrix: &Matrix4) -> Result<()> {
         match self {
             Shape::Sphere(s) => s.transform(matrix),
             Shape::Plane(s) => s.transform(matrix),

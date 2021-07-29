@@ -5,7 +5,7 @@ use crate::{
 
 use super::{Intersect, Intersection, Shape};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct BoundingBox {
     min: Vector3,
     max: Vector3,
