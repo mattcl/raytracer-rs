@@ -35,6 +35,12 @@ impl Vertex {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ShadingMode {
+    Flat,
+    Smooth
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct TriangleMesh {
     num_triangles: usize,
@@ -45,11 +51,17 @@ pub struct TriangleMesh {
     material: Material,
     wto: Matrix4,
     otw: Matrix4,
+    shading_mode: ShadingMode,
 }
 
 impl TriangleMesh {
     pub fn with_material(mut self, material: Material) -> Self {
         self.material = material;
+        self
+    }
+
+    pub fn with_shading(mut self, mode: ShadingMode) -> Self {
+        self.shading_mode = mode;
         self
     }
 
@@ -80,8 +92,6 @@ impl Intersect for TriangleMesh {
                 })
                 .min_by(|a, b| a.0.partial_cmp(&b.0).unwrap())
             {
-                let normal = self.triangle_normals.get(triangle_index)?;
-
                 // this is safe since we know it must exist for us to be here
                 let (v0, v1, v2) = self.get_triangle_points(triangle_index).unwrap();
                 let (dist, uv) = intersect;
@@ -91,9 +101,18 @@ impl Intersect for TriangleMesh {
                     + uv.y() * Vector2::from(v2.texture_coord);
 
                 let point = ray.point_at(dist);
+
+                // face normal
+                let normal = match self.shading_mode {
+                    ShadingMode::Flat => *self.triangle_normals.get(triangle_index)?,
+                    ShadingMode::Smooth => {
+                        (1.0 - uv.x() - uv.y()) * v0.normal + uv.x() * v1.normal + uv.y() * v2.normal
+                    }
+                };
+
                 let intersect = Intersection::new(dist, shape_ref)
                     .location(point)
-                    .normal(*normal)
+                    .normal(normal)
                     .texture_coord(TextureCoord::new(hit_coord.into(), self.material.scale));
 
                 return Some(intersect);
@@ -199,6 +218,7 @@ impl From<GeoMesh> for TriangleMesh {
             material: Material::default(),
             wto: Matrix4::I,
             otw: Matrix4::I,
+            shading_mode: ShadingMode::Flat,
         }
     }
 }
@@ -236,6 +256,7 @@ impl From<Ply> for TriangleMesh {
             material: Material::default(),
             wto: Matrix4::I,
             otw: Matrix4::I,
+            shading_mode: ShadingMode::Flat,
         }
     }
 }

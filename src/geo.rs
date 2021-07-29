@@ -1,3 +1,5 @@
+// so this whole thing is ridiculously complicated, but I wanted to play with
+// the nom crate, so there's that
 use std::{
     collections::HashMap,
     f64::{INFINITY, NEG_INFINITY},

@@ -33,7 +33,7 @@ impl PropertyAccess for Point3D {
 
 #[derive(Debug, Default, Clone)]
 struct PlyFace {
-    vertex_index: Vec<i32>,
+    vertex_index: Vec<usize>,
 }
 
 impl PropertyAccess for PlyFace {
@@ -43,8 +43,7 @@ impl PropertyAccess for PlyFace {
 
     fn set_property(&mut self, name: String, property: Property) {
         match (name.as_ref(), property) {
-            ("vertex_index", Property::ListInt(val)) => self.vertex_index = val,
-            ("vertex_indices", Property::ListInt(val)) => self.vertex_index = val,
+            ("vertex_index", Property::ListInt(val)) | ("vertex_indices", Property::ListInt(val)) => self.vertex_index = val.into_iter().map(|v| v as usize).collect(),
             _ => unreachable!(),
         }
 
@@ -102,27 +101,35 @@ impl TryFrom<File> for Ply {
         let bounding_box = BoundingBox::new(min.into(), max.into());
 
         let mut face_normals = Vec::new();
-        // let mut normal_map = HashMap::new();
+        let mut normal_map: HashMap<usize, Vec<Vector3>> = HashMap::new();
         // iterate through the faces. For each face, pick three points and
         // compute the normal from those points
-        let mut face_start = 0;
-
         for i in 0..face_raw.len() {
-            let p0 = vertex_raw[face_raw[i].vertex_index[0] as usize];
-            let p1 = vertex_raw[face_raw[i].vertex_index[1] as usize];
-            let p2 = vertex_raw[face_raw[i].vertex_index[2] as usize];
+            let face = &face_raw[i];
+            let p0 = vertex_raw[face.vertex_index[0]];
+            let p1 = vertex_raw[face.vertex_index[1]];
+            let p2 = vertex_raw[face.vertex_index[2]];
             let normal = (p1 - p0).cross(p2 - p0).normalize();
+
+            for j in 0..face.vertex_index.len() {
+                normal_map.entry(face.vertex_index[j]).or_default().push(normal);
+            }
 
             face_normals.push(normal);
         }
 
         let vertices = (0..vertex_raw.len())
-            .map(|i| Vertex::new(vertex_raw[i], Vector3::default(), Point2D::default()))
+            .map(|i| {
+                let v = normal_map.get(&i).expect("A vertex was never used");
+                let n =
+                    (v.iter().fold(Vector3::default(), |a, e| a + e) / v.len() as f64).normalize();
+                Vertex::new(vertex_raw[i], n, Point2D::default())
+            })
             .collect::<Vec<Vertex>>();
 
         let faces = face_raw
             .into_iter()
-            .map(|v| v.vertex_index.into_iter().map(|i| i as usize).collect())
+            .map(|v| v.vertex_index)
             .collect();
 
         Ok(Self {
