@@ -72,15 +72,25 @@ impl From<Triangle> for Shape {
     }
 }
 
+
 pub fn triangle_intersect(
     p0: &Point3D,
     p1: &Point3D,
     p2: &Point3D,
     ray: &Ray,
 ) -> Option<(f64, Point2D)> {
-    let dir = ray.direction();
     let v0v1 = p1 - p0;
     let v0v2 = p2 - p0;
+    pre_calc_traingle_intersect(p0, &v0v1, &v0v2, ray)
+}
+
+pub fn pre_calc_traingle_intersect(
+    p0: &Point3D,
+    v0v1: &Vector3,
+    v0v2: &Vector3,
+    ray: &Ray,
+) -> Option<(f64, Point2D)> {
+    let dir = ray.direction();
     let pvec = dir.cross(v0v2);
     let det = v0v1.dot(pvec);
 

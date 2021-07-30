@@ -9,9 +9,7 @@ use crate::{
     ray::Ray,
 };
 
-use super::{
-    triangle::triangle_intersect, BoundingBox, Intersect, Intersection, Shape, Transformable,
-};
+use super::{BoundingBox, Intersect, Intersection, Shape, Transformable, triangle::pre_calc_traingle_intersect};
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct Vertex {
@@ -45,7 +43,8 @@ pub enum ShadingMode {
 pub struct TriangleMesh {
     num_triangles: usize,
     vertices: Vec<Vertex>,
-    triangles: Vec<(usize, usize, usize)>,
+    // (v1, v2, v3, v0v1, v0v2)
+    triangles: Vec<(usize, usize, usize, Vector3, Vector3)>,
     triangle_normals: Vec<Vector3>,
     bounding_box: BoundingBox,
     material: Material,
@@ -69,12 +68,14 @@ impl TriangleMesh {
         &self.material
     }
 
-    fn get_triangle_points(&self, triangle_index: usize) -> Option<(&Vertex, &Vertex, &Vertex)> {
-        let (a, b, c) = self.triangles.get(triangle_index)?;
+    fn get_triangle_points(&self, triangle_index: usize) -> Option<(&Vertex, &Vertex, &Vertex, &Vector3, &Vector3)> {
+        let (a, b, c, d, e) = self.triangles.get(triangle_index)?;
         Some((
             self.vertices.get(*a)?,
             self.vertices.get(*b)?,
             self.vertices.get(*c)?,
+            d,
+            e,
         ))
     }
 }
@@ -84,16 +85,16 @@ impl Intersect for TriangleMesh {
         if self.bounding_box.intersect(ray, shape_ref).is_some() {
             if let Some((intersect, triangle_index)) = (0..self.num_triangles)
                 .filter_map(|i| {
-                    self.get_triangle_points(i)
-                        .and_then(|(v0, v1, v2)| {
-                            triangle_intersect(&v0.point, &v1.point, &v2.point, ray)
+                    self.triangles.get(i)
+                        .and_then(|(v0, _, _, v0v1, v0v2)| {
+                            pre_calc_traingle_intersect(&self.vertices[*v0].point, &v0v1, &v0v2, ray)
                         })
                         .and_then(|intersect| Some((intersect, i)))
                 })
                 .min_by(|a, b| a.0.partial_cmp(&b.0).unwrap())
             {
                 // this is safe since we know it must exist for us to be here
-                let (v0, v1, v2) = self.get_triangle_points(triangle_index).unwrap();
+                let (v0, v1, v2, ..) = self.get_triangle_points(triangle_index).unwrap();
                 let (dist, uv) = intersect;
 
                 let hit_coord = (1.0 - uv.x() - uv.y()) * Vector2::from(v0.texture_coord)
@@ -198,10 +199,19 @@ impl From<GeoMesh> for TriangleMesh {
         k = 0;
         for i in 0..geo.num_faces {
             for j in 0..(geo.face_index[i] - 2) {
+                let v0 = geo.vertex_index[k];
+                let v1 = geo.vertex_index[k + j + 1];
+                let v2 = geo.vertex_index[k + j + 2];
+
+                let v0v1 = geo.vertices[v1].point - geo.vertices[v0].point;
+                let v0v2 = geo.vertices[v2].point - geo.vertices[v0].point;
+
                 triangles.push((
-                    geo.vertex_index[k],
-                    geo.vertex_index[k + j + 1],
-                    geo.vertex_index[k + j + 2],
+                    v0,
+                    v1,
+                    v2,
+                    v0v1,
+                    v0v2,
                 ));
                 triangle_normals.push(geo.face_normals[i]);
             }
@@ -242,7 +252,20 @@ impl From<Ply> for TriangleMesh {
         let mut triangle_normals = Vec::with_capacity(num_triangles);
         for i in 0..ply.faces.len() {
             for j in 0..ply.faces[i].len() - 2 {
-                triangles.push((ply.faces[i][0], ply.faces[i][j + 1], ply.faces[i][j + 2]));
+                let v0 = ply.faces[i][0];
+                let v1 = ply.faces[i][j + 1];
+                let v2 = ply.faces[i][j + 2];
+
+                let v0v1 = ply.vertices[v1].point - ply.vertices[v0].point;
+                let v0v2 = ply.vertices[v2].point - ply.vertices[v0].point;
+
+                triangles.push((
+                    v0,
+                    v1,
+                    v2,
+                    v0v1,
+                    v0v2,
+                ));
                 triangle_normals.push(ply.face_normals[i]);
             }
         }

@@ -15,16 +15,8 @@ impl<const N: usize> Vector<N> {
         Self(data)
     }
 
-    pub fn dot(&self, other: impl AsRef<Self>) -> f64 {
-        let other = other.as_ref();
-        self.0
-            .iter()
-            .zip(other.0)
-            .fold(0.0, |acc, (a, b)| acc + *a * b)
-    }
-
     pub fn norm(&self) -> f64 {
-        self.dot(&self)
+        self.0.iter().fold(0.0, |a, e| e * e + a)
     }
 
     pub fn magnitude(&self) -> f64 {
@@ -148,6 +140,11 @@ impl Vector2 {
     pub fn y(&self) -> f64 {
         self[1]
     }
+
+    pub fn dot(&self, other: impl AsRef<Self>) -> f64 {
+        let other = other.as_ref();
+        self[0] * other[0] + self[1] * other[1]
+    }
 }
 
 // So, because auto_ops doesn't support generics yet, we have to have one of
@@ -178,6 +175,11 @@ impl Vector3 {
         self[2]
     }
 
+    pub fn dot(&self, other: impl AsRef<Self>) -> f64 {
+        let other = other.as_ref();
+        self[0] * other[0] + self[1] * other[1] + self[2] * other[2]
+    }
+
     pub fn cross(&self, other: impl AsRef<Self>) -> Self {
         let Self([bx, by, bz]) = self;
         let Self([cx, cy, cz]) = other.as_ref();
@@ -187,7 +189,14 @@ impl Vector3 {
 }
 
 impl_op_ex!(+ |a: &Vector3, b: &Vector3| -> Vector3 { a.zip(b, |x, y| x + y) });
-impl_op_ex!(-|a: &Vector3, b: &Vector3| -> Vector3 { a.zip(b, |x, y| x - y) });
+// this happens so freqently, that the overhead for the iterator is noticeable
+impl_op_ex!(-|a: &Vector3, b: &Vector3| -> Vector3 {
+    Vector3::new([
+        a[0] - b[0],
+        a[1] - b[1],
+        a[2] - b[2],
+    ])
+});
 impl_op_ex_commutative!(*|a: &Vector3, b: f64| -> Vector3 { a.map(|x| x * b) });
 impl_op_ex!(/ |a: &Vector3, b: f64| -> Vector3 { a.map(|x| x / b) });
 
@@ -215,6 +224,11 @@ impl Vector4 {
 
     pub fn w(&self) -> f64 {
         self[3]
+    }
+
+    pub fn dot(&self, other: impl AsRef<Self>) -> f64 {
+        let other = other.as_ref();
+        self[0] * other[0] + self[1] * other[1] + self[2] * other[2] + self[3] * other[3]
     }
 }
 

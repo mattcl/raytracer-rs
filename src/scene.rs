@@ -1,7 +1,9 @@
 use std::f64::consts::PI;
 
 use image::{imageops, DynamicImage, GenericImage};
+#[cfg(feature = "feedback")]
 use indicatif::{ProgressBar, ParallelProgressIterator};
+use itertools::Itertools;
 use rayon::prelude::*;
 
 use crate::{
@@ -84,16 +86,37 @@ impl Scene {
     }
 
     pub fn raytrace(&self) -> Vec<DynamicImage> {
-        self.cameras.iter().map(|c| self.raytrace_cam(c)).collect()
+        self.cameras
+            .iter()
+            .enumerate()
+            .map(|(_i, c)| {
+                #[cfg(feature = "feedback")]
+                println!("rendering camera {}", _i);
+                self.raytrace_cam(c)
+            })
+            .collect()
     }
 
     pub fn par_raytrace(&self) -> Vec<DynamicImage> {
         self.cameras
             .iter()
             .enumerate()
-            .map(|(i, c)| {
-                println!("rendering camera {}", i);
+            .map(|(_i, c)| {
+                #[cfg(feature = "feedback")]
+                println!("rendering camera {}", _i);
                 self.par_raytrace_cam(c)
+            })
+            .collect()
+    }
+
+    pub fn par_raytrace_unchunked(&self) -> Vec<DynamicImage> {
+        self.cameras
+            .iter()
+            .enumerate()
+            .map(|(_i, c)| {
+                #[cfg(feature = "feedback")]
+                println!("rendering camera {}", _i);
+                self.par_raytrace_cam_unchunked(c)
             })
             .collect()
     }
@@ -103,8 +126,10 @@ impl Scene {
 
         let d = (self.view.width as f64 / 2.0) / (camera.fov_radians() / 2.0).tan();
 
-        for x in 0..self.view.width {
-            for y in 0..self.view.height {
+        (0..self.view.width)
+            .cartesian_product(0..self.view.height)
+            .into_iter()
+            .for_each(|(x, y)| {
                 let (sx, sy) = self.view.to_plane_coord(x, y);
                 let v = (d * camera.forward() + sx * camera.right() + sy * camera.up()).normalize();
                 let ray = Ray::new(camera.origin().clone(), v);
@@ -112,20 +137,24 @@ impl Scene {
                 let col = self.color_for(&ray);
 
                 img.put_pixel(x, y, col.into());
-            }
-        }
+            });
 
         img
     }
 
     fn par_raytrace_cam(&self, camera: &Camera) -> DynamicImage {
-        let pb = ProgressBar::new(self.view.width as u64);
         let mut img = DynamicImage::new_rgb8(self.view.width, self.view.height);
         let d = (self.view.width as f64 / 2.0) / (camera.fov_radians() / 2.0).tan();
 
-        (0..self.view.width)
-            .into_par_iter()
-            .progress_with(pb)
+        let iter = (0..self.view.width)
+            .into_par_iter();
+
+        #[cfg(feature = "feedback")]
+        let pb = ProgressBar::new(self.view.width as u64);
+        #[cfg(feature = "feedback")]
+        let iter = iter.progress_with(pb);
+
+        iter
             .map(|x| {
                 let mut partial = DynamicImage::new_rgb8(1, self.view.height);
                 for y in 0..self.view.height {
@@ -142,6 +171,38 @@ impl Scene {
             .collect::<Vec<(DynamicImage, u32)>>()
             .iter()
             .for_each(|(part, x)| imageops::replace(&mut img, part, *x, 0));
+
+        img
+    }
+
+    fn par_raytrace_cam_unchunked(&self, camera: &Camera) -> DynamicImage {
+        // let pb = ProgressBar::new(self.view.width as u64);
+        let mut img = DynamicImage::new_rgb8(self.view.width, self.view.height);
+        let d = (self.view.width as f64 / 2.0) / (camera.fov_radians() / 2.0).tan();
+
+        let iter = (0..self.view.width)
+            .cartesian_product(0..self.view.height)
+            .collect::<Vec<(u32, u32)>>()
+            .into_par_iter();
+
+        #[cfg(feature = "feedback")]
+        let pb = ProgressBar::new(self.view.width as u64);
+        #[cfg(feature = "feedback")]
+        let iter = iter.progress_with(pb);
+
+        iter
+            .map(|(x, y)| {
+                let (sx, sy) = self.view.to_plane_coord(x, y);
+                let v =
+                    (d * camera.forward() + sx * camera.right() + sy * camera.up()).normalize();
+                let ray = Ray::new(camera.origin().clone(), v);
+
+                let col = self.color_for(&ray);
+                (x, y, col)
+            })
+            .collect::<Vec<(u32, u32, Color)>>()
+            .iter()
+            .for_each(|(x, y, color)| img.put_pixel(*x, *y, (*color).into()));
 
         img
     }
