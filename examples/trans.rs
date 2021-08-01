@@ -4,7 +4,7 @@ use raytracer_rs::color::Color;
 use raytracer_rs::geo::GeoMesh;
 use raytracer_rs::light::{DirectionalLight, PointLight};
 use raytracer_rs::material::{Checker, Material, Surface};
-use raytracer_rs::math::{Matrix4, Point3D, Transform, Vector3};
+use raytracer_rs::math::{Point3D, Transform, Vector3};
 use raytracer_rs::shape::mesh::TriangleMesh;
 use raytracer_rs::shape::{Plane, Transformable};
 use raytracer_rs::{Camera, Scene, View};

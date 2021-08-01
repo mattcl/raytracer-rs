@@ -4,6 +4,28 @@ use auto_ops::{impl_op_ex, impl_op_ex_commutative};
 
 use super::{vector::Vector4, Point3D, Vector3};
 
+/// A 4x4, row-major matrix with associated operations.
+///
+///
+/// For multiplication between matrices and other types ([Point3D](raytracer_rs::math::Point3D) and
+/// [Vector3](raytracer_rs::math::Vector3)), points and vectors are treated as column vectors and
+/// are premultiplied (other type to the right of the `*` operator). In these cases, points and
+/// vectors are temporarily assumed to have a 4th term of 1 to match dimensions.
+///
+/// Example:
+/// ```
+/// use raytracer_rs::math::{Matrix4, Point3D, Vector3};
+///
+/// let m = Matrix4::I;
+/// let p = Point3D::from([2.0, 3.0, 4.0]);
+/// let v = Vector3::from([20.0, 30.0, 40.0]);
+///
+/// let mp: Point3D = m * p;
+/// let mv: Vector3 = m * v;
+///
+/// // p * m <- unsupported
+/// // v * m <- unsupported
+/// ```
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct Matrix4(pub [[f64; 4]; 4]);
 
@@ -100,6 +122,8 @@ impl Matrix4 {
         Some(out)
     }
 
+    /// Produces an array of [Vector4] representing the four rows. Yielding [Vector4] simplifies
+    /// some of the subsequent operations.
     pub fn rows(&self) -> [Vector4; 4] {
         [
             self[0].into(),
@@ -109,6 +133,8 @@ impl Matrix4 {
         ]
     }
 
+    /// Produces an array of [Vector4] representing the four columns. Yielding [Vector4] simplifies
+    /// some of the subsequent operations.
     pub fn columns(&self) -> [Vector4; 4] {
         [
             [self[0][0], self[1][0], self[2][0], self[3][0]].into(),
@@ -118,6 +144,7 @@ impl Matrix4 {
         ]
     }
 }
+
 impl Index<usize> for Matrix4 {
     type Output = [f64; 4];
 

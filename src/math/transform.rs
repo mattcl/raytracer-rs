@@ -1,12 +1,14 @@
 use crate::math::{Matrix4, Vector3};
 
 /// Transform is a builder for generating tranformation matrices. Invoking
-/// `.build()` will yield a [Matrix4](crate::math::Matrix4)
+/// `.build()` will yield a [Matrix4](crate::math::Matrix4).
+///
 /// Example:
 /// ```
 /// use raytracer_rs::math::Transform;
 /// let matrix = Transform::new()
 ///     .rotate_z(20.0)
+///     .scale(1.5)
 ///     .translate([0.0, 2.0, 0.0].into())
 ///     .build();
 /// ```
@@ -17,16 +19,6 @@ pub struct Transform {
     trans: Vector3,
 }
 
-impl Default for Transform {
-    fn default() -> Self {
-        Self {
-            rotations: Vec::new(),
-            scale: Matrix4::I,
-            trans: Vector3::default(),
-        }
-    }
-}
-
 impl Transform {
     pub fn new() -> Self {
         Self::default()
@@ -34,6 +26,7 @@ impl Transform {
 
     /// Rotate `degrees` about the X-axis. Rotations are applied in the order
     /// they are specified. Multiple rotations on a given axis are permitted.
+    ///
     /// Example:
     /// ```
     /// use raytracer_rs::math::Transform;
@@ -46,6 +39,8 @@ impl Transform {
     ///     .rotate_y(44.0) // will rotate y first
     ///     .rotate_x(20.0) // then x
     ///     .build();
+    ///
+    /// assert_ne!(x_then_y, y_then_x);
     /// ```
     pub fn rotate_x<T>(&mut self, degrees: T) -> &mut Self
     where
@@ -63,6 +58,7 @@ impl Transform {
 
     /// Rotate `degrees` about the Y-axis. Rotations are applied in the order
     /// they are specified. Multiple rotations on a given axis are permitted.
+    ///
     /// Example:
     /// ```
     /// use raytracer_rs::math::Transform;
@@ -75,6 +71,8 @@ impl Transform {
     ///     .rotate_y(44.0) // will rotate y first
     ///     .rotate_x(20.0) // then x
     ///     .build();
+    ///
+    /// assert_ne!(x_then_y, y_then_x);
     /// ```
     pub fn rotate_y<T>(&mut self, degrees: T) -> &mut Self
     where
@@ -92,6 +90,7 @@ impl Transform {
 
     /// Rotate `degrees` about the Z-axis. Rotations are applied in the order
     /// they are specified. Multiple rotations on a given axis are permitted.
+    ///
     /// Example:
     /// ```
     /// use raytracer_rs::math::Transform;
@@ -100,10 +99,12 @@ impl Transform {
     ///     .rotate_y(44.0) // then y
     ///     .build();
     ///
-    /// let z_then_x = Transform::new()
+    /// let y_then_z = Transform::new()
     ///     .rotate_z(44.0) // will rotate y first
-    ///     .rotate_x(20.0) // then z
+    ///     .rotate_y(20.0) // then z
     ///     .build();
+    ///
+    /// assert_ne!(z_then_y, y_then_z);
     /// ```
     pub fn rotate_z<T>(&mut self, degrees: T) -> &mut Self
     where
@@ -162,6 +163,18 @@ impl Transform {
         self
     }
 
+    /// Add a translation to the computed transformation matrix.
+    ///
+    /// Example:
+    /// ```
+    /// use raytracer_rs::math::{Transform, Vector3};
+    /// let v: Vector3 = [1.0, 2.0, 3.0].into();
+    /// let m = Transform::new()
+    ///     .translate(v)
+    ///     .build();
+    ///
+    /// assert_eq!(Vector3::from(m.columns()[3]), v);
+    /// ```
     pub fn translate(&mut self, vec: Vector3) -> &mut Self {
         self.trans = vec;
         self
@@ -175,5 +188,15 @@ impl Transform {
         r[2][3] = self.trans[2];
 
         r
+    }
+}
+
+impl Default for Transform {
+    fn default() -> Self {
+        Self {
+            rotations: Vec::new(),
+            scale: Matrix4::I,
+            trans: Vector3::default(),
+        }
     }
 }
