@@ -33,7 +33,7 @@ impl Transform {
     }
 
     /// Rotate `degrees` about the X-axis. Rotations are applied in the order
-    /// they are specified. Multiple rotations on a given access are permitted.
+    /// they are specified. Multiple rotations on a given axis are permitted.
     /// Example:
     /// ```
     /// use raytracer_rs::math::Transform;
@@ -62,7 +62,7 @@ impl Transform {
     }
 
     /// Rotate `degrees` about the Y-axis. Rotations are applied in the order
-    /// they are specified. Multiple rotations on a given access are permitted.
+    /// they are specified. Multiple rotations on a given axis are permitted.
     /// Example:
     /// ```
     /// use raytracer_rs::math::Transform;
@@ -91,7 +91,7 @@ impl Transform {
     }
 
     /// Rotate `degrees` about the Z-axis. Rotations are applied in the order
-    /// they are specified. Multiple rotations on a given access are permitted.
+    /// they are specified. Multiple rotations on a given axis are permitted.
     /// Example:
     /// ```
     /// use raytracer_rs::math::Transform;

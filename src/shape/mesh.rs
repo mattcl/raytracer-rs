@@ -10,8 +10,12 @@ use crate::{
 };
 
 use super::{
-    triangle::pre_calc_traingle_intersect, BoundingBox, Intersect, Intersection, Shape,
-    Transformable,
+    triangle::pre_calc_traingle_intersect,
+    BoundingBox,
+    Intersect,
+    Intersection,
+    Shape,
+    Transformable
 };
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
