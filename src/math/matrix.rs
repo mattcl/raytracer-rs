@@ -55,13 +55,6 @@ impl Matrix4 {
     }
 
     pub fn inverse(&self) -> Option<Self> {
-        let d = self.det();
-        if d == 0.0 {
-            return None;
-        }
-
-        let mut out = Self::default();
-
         let s0 = self[0][0] * self[1][1] - self[1][0] * self[0][1];
         let s1 = self[0][0] * self[1][2] - self[1][0] * self[0][2];
         let s2 = self[0][0] * self[1][3] - self[1][0] * self[0][3];
@@ -79,6 +72,8 @@ impl Matrix4 {
         if det == 0.0 {
             return None;
         }
+
+        let mut out = Self::default();
 
         let invdet = 1.0 / (s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0);
 
