@@ -47,16 +47,17 @@ impl Transform {
     ///     .rotate_x(20.0) // then x
     ///     .build();
     /// ```
-    pub fn rotate_x<T>(&mut self, degrees: T) -> &mut Self where T: Into<f64> {
+    pub fn rotate_x<T>(&mut self, degrees: T) -> &mut Self
+    where
+        T: Into<f64>,
+    {
         let th = degrees.into().to_radians();
-        self.rotations.push(
-            Matrix4([
-                [1.0, 0.0,      0.0,       0.0],
-                [0.0, th.cos(), -th.sin(), 0.0],
-                [0.0, th.sin(), th.cos(),  0.0],
-                [0.0, 0.0,      0.0,       1.0],
-            ])
-        );
+        self.rotations.push(Matrix4([
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, th.cos(), -th.sin(), 0.0],
+            [0.0, th.sin(), th.cos(), 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]));
         self
     }
 
@@ -75,16 +76,17 @@ impl Transform {
     ///     .rotate_x(20.0) // then x
     ///     .build();
     /// ```
-    pub fn rotate_y<T>(&mut self, degrees: T) -> &mut Self where T: Into<f64> {
+    pub fn rotate_y<T>(&mut self, degrees: T) -> &mut Self
+    where
+        T: Into<f64>,
+    {
         let th = degrees.into().to_radians();
-        self.rotations.push(
-            Matrix4([
-                [th.cos(),  0.0, th.sin(), 0.0],
-                [0.0,       1.0, 0.0,      0.0],
-                [-th.sin(), 0.0, th.cos(), 0.0],
-                [0.0,       0.0, 0.0,      1.0],
-            ])
-        );
+        self.rotations.push(Matrix4([
+            [th.cos(), 0.0, th.sin(), 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [-th.sin(), 0.0, th.cos(), 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]));
         self
     }
 
@@ -103,22 +105,26 @@ impl Transform {
     ///     .rotate_x(20.0) // then z
     ///     .build();
     /// ```
-    pub fn rotate_z<T>(&mut self, degrees: T) -> &mut Self where T: Into<f64> {
+    pub fn rotate_z<T>(&mut self, degrees: T) -> &mut Self
+    where
+        T: Into<f64>,
+    {
         let th = degrees.into().to_radians();
-        self.rotations.push(
-            Matrix4([
-                [th.cos(), -th.sin(), 0.0, 0.0],
-                [th.sin(), th.cos(),  0.0, 0.0],
-                [0.0,      0.0,       1.0, 0.0],
-                [0.0,      0.0,       0.0, 1.0],
-            ])
-        );
+        self.rotations.push(Matrix4([
+            [th.cos(), -th.sin(), 0.0, 0.0],
+            [th.sin(), th.cos(), 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]));
         self
     }
 
     /// Uniformly scale by `val` (will override all previously set scale values). Scale happens
     /// pre-rotation.
-    pub fn scale<T>(&mut self, val: T) -> &mut Self where T: Into<f64> {
+    pub fn scale<T>(&mut self, val: T) -> &mut Self
+    where
+        T: Into<f64>,
+    {
         let val = val.into();
         self.scale[0][0] = val;
         self.scale[1][1] = val;
@@ -128,21 +134,30 @@ impl Transform {
 
     /// Scale `val` units in the X direction. Will leave scale values in other
     /// directions unchanged. Scale happens pre-rotation.
-    pub fn scale_x<T>(&mut self, val: T) -> &mut Self where T: Into<f64> {
+    pub fn scale_x<T>(&mut self, val: T) -> &mut Self
+    where
+        T: Into<f64>,
+    {
         self.scale[0][0] = val.into();
         self
     }
 
     /// Scale `val` units in the Y direction. Will leave scale values in other
     /// directions unchanged. Scale happens pre-rotation.
-    pub fn scale_y<T>(&mut self, val: T) -> &mut Self where T: Into<f64> {
+    pub fn scale_y<T>(&mut self, val: T) -> &mut Self
+    where
+        T: Into<f64>,
+    {
         self.scale[1][1] = val.into();
         self
     }
 
     /// Scale `val` units in the Z direction. Will leave scale values in other
     /// directions unchanged. Scale happens pre-rotation.
-    pub fn scale_z<T>(&mut self, val: T) -> &mut Self where T: Into<f64> {
+    pub fn scale_z<T>(&mut self, val: T) -> &mut Self
+    where
+        T: Into<f64>,
+    {
         self.scale[2][2] = val.into();
         self
     }

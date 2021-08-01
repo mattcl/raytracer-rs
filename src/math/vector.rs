@@ -191,11 +191,7 @@ impl Vector3 {
 impl_op_ex!(+ |a: &Vector3, b: &Vector3| -> Vector3 { a.zip(b, |x, y| x + y) });
 // this happens so freqently, that the overhead for the iterator is noticeable
 impl_op_ex!(-|a: &Vector3, b: &Vector3| -> Vector3 {
-    Vector3::new([
-        a[0] - b[0],
-        a[1] - b[1],
-        a[2] - b[2],
-    ])
+    Vector3::new([a[0] - b[0], a[1] - b[1], a[2] - b[2]])
 });
 impl_op_ex_commutative!(*|a: &Vector3, b: f64| -> Vector3 { a.map(|x| x * b) });
 impl_op_ex!(/ |a: &Vector3, b: f64| -> Vector3 { a.map(|x| x / b) });

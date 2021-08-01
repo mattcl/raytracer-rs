@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 
 use image::{imageops, DynamicImage, GenericImage};
 #[cfg(feature = "feedback")]
-use indicatif::{ProgressBar, ParallelProgressIterator};
+use indicatif::{ParallelProgressIterator, ProgressBar};
 use itertools::Itertools;
 use rayon::prelude::*;
 
@@ -146,31 +146,28 @@ impl Scene {
         let mut img = DynamicImage::new_rgb8(self.view.width, self.view.height);
         let d = (self.view.width as f64 / 2.0) / (camera.fov_radians() / 2.0).tan();
 
-        let iter = (0..self.view.width)
-            .into_par_iter();
+        let iter = (0..self.view.width).into_par_iter();
 
         #[cfg(feature = "feedback")]
         let pb = ProgressBar::new(self.view.width as u64);
         #[cfg(feature = "feedback")]
         let iter = iter.progress_with(pb);
 
-        iter
-            .map(|x| {
-                let mut partial = DynamicImage::new_rgb8(1, self.view.height);
-                for y in 0..self.view.height {
-                    let (sx, sy) = self.view.to_plane_coord(x, y);
-                    let v =
-                        (d * camera.forward() + sx * camera.right() + sy * camera.up()).normalize();
-                    let ray = Ray::new(camera.origin().clone(), v);
+        iter.map(|x| {
+            let mut partial = DynamicImage::new_rgb8(1, self.view.height);
+            for y in 0..self.view.height {
+                let (sx, sy) = self.view.to_plane_coord(x, y);
+                let v = (d * camera.forward() + sx * camera.right() + sy * camera.up()).normalize();
+                let ray = Ray::new(camera.origin().clone(), v);
 
-                    let col = self.color_for(&ray);
-                    partial.put_pixel(0, y, col.into());
-                }
-                (partial, x)
-            })
-            .collect::<Vec<(DynamicImage, u32)>>()
-            .iter()
-            .for_each(|(part, x)| imageops::replace(&mut img, part, *x, 0));
+                let col = self.color_for(&ray);
+                partial.put_pixel(0, y, col.into());
+            }
+            (partial, x)
+        })
+        .collect::<Vec<(DynamicImage, u32)>>()
+        .iter()
+        .for_each(|(part, x)| imageops::replace(&mut img, part, *x, 0));
 
         img
     }
@@ -190,19 +187,17 @@ impl Scene {
         #[cfg(feature = "feedback")]
         let iter = iter.progress_with(pb);
 
-        iter
-            .map(|(x, y)| {
-                let (sx, sy) = self.view.to_plane_coord(x, y);
-                let v =
-                    (d * camera.forward() + sx * camera.right() + sy * camera.up()).normalize();
-                let ray = Ray::new(camera.origin().clone(), v);
+        iter.map(|(x, y)| {
+            let (sx, sy) = self.view.to_plane_coord(x, y);
+            let v = (d * camera.forward() + sx * camera.right() + sy * camera.up()).normalize();
+            let ray = Ray::new(camera.origin().clone(), v);
 
-                let col = self.color_for(&ray);
-                (x, y, col)
-            })
-            .collect::<Vec<(u32, u32, Color)>>()
-            .iter()
-            .for_each(|(x, y, color)| img.put_pixel(*x, *y, (*color).into()));
+            let col = self.color_for(&ray);
+            (x, y, col)
+        })
+        .collect::<Vec<(u32, u32, Color)>>()
+        .iter()
+        .for_each(|(x, y, color)| img.put_pixel(*x, *y, (*color).into()));
 
         img
     }

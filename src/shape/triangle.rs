@@ -72,7 +72,6 @@ impl From<Triangle> for Shape {
     }
 }
 
-
 pub fn triangle_intersect(
     p0: &Point3D,
     p1: &Point3D,

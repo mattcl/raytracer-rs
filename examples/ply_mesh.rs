@@ -49,7 +49,9 @@ fn main() {
         [0.0, 0.0, 0.0, 1.0],
     ]);
 
-    smooth_bust.transform(&transform).expect("could not translate");
+    smooth_bust
+        .transform(&transform)
+        .expect("could not translate");
     scene.add_shape(smooth_bust);
 
     scene.add_light(DirectionalLight::default());

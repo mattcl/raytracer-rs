@@ -74,10 +74,14 @@ pub fn bench(c: &mut Criterion) {
             b.iter(|| scene.par_raytrace().len())
         });
 
-        group.bench_with_input(BenchmarkId::new("parallel-unchunked", width), width, |b, width| {
-            scene.set_view(View::new(*width, *width));
-            b.iter(|| scene.par_raytrace_unchunked().len())
-        });
+        group.bench_with_input(
+            BenchmarkId::new("parallel-unchunked", width),
+            width,
+            |b, width| {
+                scene.set_view(View::new(*width, *width));
+                b.iter(|| scene.par_raytrace_unchunked().len())
+            },
+        );
     }
 
     group.finish();

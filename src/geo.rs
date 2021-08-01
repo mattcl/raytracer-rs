@@ -5,7 +5,14 @@ use std::{
     f64::{INFINITY, NEG_INFINITY},
 };
 
-use nom::{IResult, character::complete::{multispace0, newline, space0}, combinator::map, multi::{many0, many1}, number::complete::double, sequence::{delimited, preceded, tuple}};
+use nom::{
+    character::complete::{multispace0, newline, space0},
+    combinator::map,
+    multi::{many0, many1},
+    number::complete::double,
+    sequence::{delimited, preceded, tuple},
+    IResult,
+};
 
 use crate::{
     error::{RTError, Result},

@@ -74,18 +74,19 @@ fn main() {
         .scale_x(1.5)
         .build();
 
+    rotated.transform(&transform).expect("could not rotate");
+    scene.add_shape(rotated);
+
     // scale + rotate
     let mut rotated = tri_mesh.clone();
     let transform = Transform::new()
-        .translate([0.0, 0.0, 10.0].into())
+        .translate([5.0, 0.0, 10.0].into())
         .scale_x(1.5)
         .rotate_z(45.0)
         .build();
 
     rotated.transform(&transform).expect("could not rotate");
     scene.add_shape(rotated);
-
-
 
     scene.add_light(DirectionalLight::default());
     scene.add_light(DirectionalLight::new(

@@ -9,7 +9,10 @@ use crate::{
     ray::Ray,
 };
 
-use super::{BoundingBox, Intersect, Intersection, Shape, Transformable, triangle::pre_calc_traingle_intersect};
+use super::{
+    triangle::pre_calc_traingle_intersect, BoundingBox, Intersect, Intersection, Shape,
+    Transformable,
+};
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct Vertex {
@@ -36,7 +39,7 @@ impl Vertex {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ShadingMode {
     Flat,
-    Smooth
+    Smooth,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -68,7 +71,10 @@ impl TriangleMesh {
         &self.material
     }
 
-    fn get_triangle_points(&self, triangle_index: usize) -> Option<(&Vertex, &Vertex, &Vertex, &Vector3, &Vector3)> {
+    fn get_triangle_points(
+        &self,
+        triangle_index: usize,
+    ) -> Option<(&Vertex, &Vertex, &Vertex, &Vector3, &Vector3)> {
         let (a, b, c, d, e) = self.triangles.get(triangle_index)?;
         Some((
             self.vertices.get(*a)?,
@@ -85,9 +91,15 @@ impl Intersect for TriangleMesh {
         if self.bounding_box.intersect(ray, shape_ref).is_some() {
             if let Some((intersect, triangle_index)) = (0..self.num_triangles)
                 .filter_map(|i| {
-                    self.triangles.get(i)
+                    self.triangles
+                        .get(i)
                         .and_then(|(v0, _, _, v0v1, v0v2)| {
-                            pre_calc_traingle_intersect(&self.vertices[*v0].point, &v0v1, &v0v2, ray)
+                            pre_calc_traingle_intersect(
+                                &self.vertices[*v0].point,
+                                &v0v1,
+                                &v0v2,
+                                ray,
+                            )
                         })
                         .and_then(|intersect| Some((intersect, i)))
                 })
@@ -107,7 +119,9 @@ impl Intersect for TriangleMesh {
                 let normal = match self.shading_mode {
                     ShadingMode::Flat => *self.triangle_normals.get(triangle_index)?,
                     ShadingMode::Smooth => {
-                        (1.0 - uv.x() - uv.y()) * v0.normal + uv.x() * v1.normal + uv.y() * v2.normal
+                        (1.0 - uv.x() - uv.y()) * v0.normal
+                            + uv.x() * v1.normal
+                            + uv.y() * v2.normal
                     }
                 };
 
@@ -175,6 +189,14 @@ impl Transformable for TriangleMesh {
 
         Ok(())
     }
+
+    fn object_to_world(&self) -> Option<&Matrix4> {
+        Some(&self.otw)
+    }
+
+    fn world_to_object(&self) -> Option<&Matrix4> {
+        Some(&self.wto)
+    }
 }
 
 impl From<TriangleMesh> for Shape {
@@ -212,13 +234,7 @@ impl From<GeoMesh> for TriangleMesh {
                 let v0v1 = geo.vertices[v1].point - geo.vertices[v0].point;
                 let v0v2 = geo.vertices[v2].point - geo.vertices[v0].point;
 
-                triangles.push((
-                    v0,
-                    v1,
-                    v2,
-                    v0v1,
-                    v0v2,
-                ));
+                triangles.push((v0, v1, v2, v0v1, v0v2));
                 triangle_normals.push(geo.face_normals[i]);
             }
 
@@ -265,13 +281,7 @@ impl From<Ply> for TriangleMesh {
                 let v0v1 = ply.vertices[v1].point - ply.vertices[v0].point;
                 let v0v2 = ply.vertices[v2].point - ply.vertices[v0].point;
 
-                triangles.push((
-                    v0,
-                    v1,
-                    v2,
-                    v0v1,
-                    v0v2,
-                ));
+                triangles.push((v0, v1, v2, v0v1, v0v2));
                 triangle_normals.push(ply.face_normals[i]);
             }
         }

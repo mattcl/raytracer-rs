@@ -43,7 +43,10 @@ impl PropertyAccess for PlyFace {
 
     fn set_property(&mut self, name: String, property: Property) {
         match (name.as_ref(), property) {
-            ("vertex_index", Property::ListInt(val)) | ("vertex_indices", Property::ListInt(val)) => self.vertex_index = val.into_iter().map(|v| v as usize).collect(),
+            ("vertex_index", Property::ListInt(val))
+            | ("vertex_indices", Property::ListInt(val)) => {
+                self.vertex_index = val.into_iter().map(|v| v as usize).collect()
+            }
             _ => unreachable!(),
         }
 
@@ -112,7 +115,10 @@ impl TryFrom<File> for Ply {
             let normal = (p1 - p0).cross(p2 - p0).normalize();
 
             for j in 0..face.vertex_index.len() {
-                normal_map.entry(face.vertex_index[j]).or_default().push(normal);
+                normal_map
+                    .entry(face.vertex_index[j])
+                    .or_default()
+                    .push(normal);
             }
 
             face_normals.push(normal);
@@ -127,10 +133,7 @@ impl TryFrom<File> for Ply {
             })
             .collect::<Vec<Vertex>>();
 
-        let faces = face_raw
-            .into_iter()
-            .map(|v| v.vertex_index)
-            .collect();
+        let faces = face_raw.into_iter().map(|v| v.vertex_index).collect();
 
         Ok(Self {
             faces,
