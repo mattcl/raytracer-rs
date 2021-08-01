@@ -165,6 +165,12 @@ impl Transformable for TriangleMesh {
             }
         }
 
+        // recompute our cache
+        for (v0, v1, v2, v0v1, v0v2) in self.triangles.iter_mut() {
+            *v0v1 = self.vertices[*v1].point - self.vertices[*v0].point;
+            *v0v2 = self.vertices[*v2].point - self.vertices[*v0].point;
+        }
+
         self.bounding_box = BoundingBox::new(min.into(), max.into());
 
         Ok(())

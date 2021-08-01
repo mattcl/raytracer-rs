@@ -5,14 +5,7 @@ use std::{
     f64::{INFINITY, NEG_INFINITY},
 };
 
-use nom::{
-    character::complete::{multispace0, newline, space0},
-    combinator::map,
-    multi::many1,
-    number::complete::double,
-    sequence::{delimited, preceded, tuple},
-    IResult,
-};
+use nom::{IResult, character::complete::{multispace0, newline, space0}, combinator::map, multi::{many0, many1}, number::complete::double, sequence::{delimited, preceded, tuple}};
 
 use crate::{
     error::{RTError, Result},
@@ -59,7 +52,7 @@ fn geo_parser(i: &str) -> IResult<&str, Geo> {
     // for the normals so we're just going to ignore this and derive
     // them ourselves
     let (i, _normals) = delimited(multispace0, vertices, tuple((space0, newline)))(i)?;
-    let (i, tex) = delimited(multispace0, tex_coords, tuple((space0, newline)))(i)?;
+    let (i, tex) = delimited(multispace0, tex_coords, tuple((space0, many0(newline))))(i)?;
     Ok((
         i,
         Geo {
