@@ -46,12 +46,20 @@ pub enum ShadingMode {
     Smooth,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct TriAddr {
+    v0: usize,
+    v1: usize,
+    v2: usize,
+    v0v1: Vector3,
+    v0v2: Vector3,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct TriangleMesh {
     num_triangles: usize,
     vertices: Vec<Vertex>,
-    // (v1, v2, v3, v0v1, v0v2)
-    triangles: Vec<(usize, usize, usize, Vector3, Vector3)>,
+    triangles: Vec<TriAddr>,
     triangle_normals: Vec<Vector3>,
     bounding_box: BoundingBox,
     material: Material,
@@ -75,17 +83,12 @@ impl TriangleMesh {
         &self.material
     }
 
-    fn get_triangle_points(
-        &self,
-        triangle_index: usize,
-    ) -> Option<(&Vertex, &Vertex, &Vertex, &Vector3, &Vector3)> {
-        let (a, b, c, d, e) = self.triangles.get(triangle_index)?;
+    pub fn triangle_vertices(&self, index: usize) -> Option<(&Vertex, &Vertex, &Vertex)> {
+        let t = self.triangles.get(index)?;
         Some((
-            self.vertices.get(*a)?,
-            self.vertices.get(*b)?,
-            self.vertices.get(*c)?,
-            d,
-            e,
+            self.vertices.get(t.v0)?,
+            self.vertices.get(t.v1)?,
+            self.vertices.get(t.v2)?,
         ))
     }
 }
@@ -97,11 +100,11 @@ impl Intersect for TriangleMesh {
                 .filter_map(|i| {
                     self.triangles
                         .get(i)
-                        .and_then(|(v0, _, _, v0v1, v0v2)| {
+                        .and_then(|tri| {
                             pre_calc_traingle_intersect(
-                                &self.vertices[*v0].point,
-                                &v0v1,
-                                &v0v2,
+                                &self.vertices[tri.v0].point,
+                                &tri.v0v1,
+                                &tri.v0v2,
                                 ray,
                             )
                         })
@@ -110,7 +113,7 @@ impl Intersect for TriangleMesh {
                 .min_by(|a, b| a.0.partial_cmp(&b.0).unwrap())
             {
                 // this is safe since we know it must exist for us to be here
-                let (v0, v1, v2, ..) = self.get_triangle_points(triangle_index).unwrap();
+                let (v0, v1, v2, ..) = self.triangle_vertices(triangle_index).unwrap();
                 let (dist, uv) = intersect;
 
                 let hit_coord = (1.0 - uv.x() - uv.y()) * Vector2::from(v0.texture_coord)
@@ -184,9 +187,9 @@ impl Transformable for TriangleMesh {
         }
 
         // recompute our cache
-        for (v0, v1, v2, v0v1, v0v2) in self.triangles.iter_mut() {
-            *v0v1 = self.vertices[*v1].point - self.vertices[*v0].point;
-            *v0v2 = self.vertices[*v2].point - self.vertices[*v0].point;
+        for t in self.triangles.iter_mut() {
+            t.v0v1 = self.vertices[t.v1].point - self.vertices[t.v0].point;
+            t.v0v2 = self.vertices[t.v2].point - self.vertices[t.v0].point;
         }
 
         self.bounding_box = BoundingBox::new(min.into(), max.into());
@@ -238,7 +241,7 @@ impl From<GeoMesh> for TriangleMesh {
                 let v0v1 = geo.vertices[v1].point - geo.vertices[v0].point;
                 let v0v2 = geo.vertices[v2].point - geo.vertices[v0].point;
 
-                triangles.push((v0, v1, v2, v0v1, v0v2));
+                triangles.push(TriAddr { v0, v1, v2, v0v1, v0v2 });
                 triangle_normals.push(geo.face_normals[i]);
             }
 
@@ -285,7 +288,7 @@ impl From<Ply> for TriangleMesh {
                 let v0v1 = ply.vertices[v1].point - ply.vertices[v0].point;
                 let v0v2 = ply.vertices[v2].point - ply.vertices[v0].point;
 
-                triangles.push((v0, v1, v2, v0v1, v0v2));
+                triangles.push(TriAddr { v0, v1, v2, v0v1, v0v2 });
                 triangle_normals.push(ply.face_normals[i]);
             }
         }
@@ -301,5 +304,27 @@ impl From<Ply> for TriangleMesh {
             otw: Matrix4::I,
             shading_mode: ShadingMode::Flat,
         }
+    }
+}
+
+impl TriangleMesh {
+    pub fn partition(&mut self) {
+        let mut min = [INFINITY; 3];
+        let mut max = [NEG_INFINITY; 3];
+        for vertex in &self.vertices {
+            for i in 0..3 {
+                let v = vertex.point[i];
+                if v < min[i] {
+                    min[i] = v;
+                }
+
+                if v > max[i] {
+                    max[i] = v;
+                }
+            }
+        }
+
+
+        // let mid = (max - min) / 2.0  + min;
     }
 }
