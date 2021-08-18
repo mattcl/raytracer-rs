@@ -9,7 +9,7 @@ use raytracer_rs::{Camera, Scene, View};
 
 fn main() {
     let mut scene = Scene::new();
-    scene.set_view(View::new(1920, 1080));
+    scene.set_view(View::new(800, 600));
     // scene.add_camera(Camera::default());
 
     let cam2 = Camera::new(Point3D::new(0, 20, -20), &Point3D::new(0, 0, 2.5), 70.0);
@@ -50,13 +50,13 @@ fn main() {
 
     scene.add_shape(triangle);
 
-    let fine: DynamicImage = ImageReader::open("this-is-fine.jpg")
-        .unwrap()
-        .decode()
-        .unwrap();
+    // let fine: DynamicImage = ImageReader::open("this-is-fine.jpg")
+    //     .unwrap()
+    //     .decode()
+    //     .unwrap();
     scene.add_shape(
         Sphere::new(Point3D::new(-8.0, -2.0, -1.0), 2.0)
-            .with_material(Material::new(fine).with_scale(2.0)),
+            .with_material(Material::new(Color::BLUE).with_scale(2.0)),
     );
 
     scene.add_shape(

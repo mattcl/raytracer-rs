@@ -7,6 +7,9 @@ edition = "2018"
 [features]
 feedback = ["indicatif"]
 
+# [profile.release]
+# lto = true
+
 [dependencies]
 auto_ops = "0.3.0"
 console = "0.14"
