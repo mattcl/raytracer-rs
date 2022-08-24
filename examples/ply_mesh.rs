@@ -12,7 +12,7 @@ use raytracer_rs::{Camera, Scene, View};
 
 fn main() {
     let mut scene = Scene::new();
-    scene.set_view(View::new(1920, 1080));
+    scene.set_view(View::new(800, 600));
     let cam = Camera::new(Point3D::new(0, 5, 20), &Point3D::new(0, 0, 0), 70.0);
     scene.add_camera(cam);
     scene.set_max_generations(7);
